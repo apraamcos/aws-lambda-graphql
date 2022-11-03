@@ -1,6 +1,7 @@
 import { DocumentNode, ExecutionResult } from 'graphql';
 
 export enum CLIENT_EVENT_TYPES {
+  GQL_SUBSCRIBE = 'subscribe',
   GQL_START = 'start',
   GQL_STOP = 'stop',
   GQL_CONNECTION_INIT = 'connection_init',
@@ -10,7 +11,8 @@ export enum CLIENT_EVENT_TYPES {
 export enum SERVER_EVENT_TYPES {
   GQL_CONNECTION_ACK = 'connection_ack',
   GQL_ERROR = 'error',
-  GQL_DATA = 'data',
+  // GQL_DATA = 'data',
+  GQL_DATA = 'next', // see node_modules/graphql-ws/lib/common.js
   GQL_COMPLETE = 'complete',
 }
 
@@ -30,14 +32,15 @@ export interface GQLOperation {
     query: string | DocumentNode;
     variables?: { [key: string]: any };
   };
-  type: CLIENT_EVENT_TYPES.GQL_START;
+  type: CLIENT_EVENT_TYPES.GQL_SUBSCRIBE;
 }
 
 export function isGQLOperation(event: any): event is GQLOperation {
   return (
-    event &&
-    typeof event === 'object' &&
-    event.type === CLIENT_EVENT_TYPES.GQL_START
+    (event &&
+      typeof event === 'object' &&
+      event.type === CLIENT_EVENT_TYPES.GQL_SUBSCRIBE
+    )
   );
 }
 
