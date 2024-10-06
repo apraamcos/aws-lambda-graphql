@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0-alpha.24",
   "dependencies": {
-    "aws-lambda-graphql": "^1.0.0-alpha.24",
+    "@cj-tech-master/aws-lambda-graphql": "2.0.2",
     "graphql": "^15.5.0",
     "ulid": "^2.3.0"
   },
