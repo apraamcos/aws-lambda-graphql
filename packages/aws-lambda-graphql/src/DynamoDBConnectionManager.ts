@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { ApiGatewayManagementApi, DynamoDB } from 'aws-sdk';
 import { ConnectionNotFoundError } from './errors';
-import {
+import type {
   IConnection,
   IConnectEvent,
   IConnectionManager,
@@ -133,7 +133,7 @@ export class DynamoDBConnectionManager implements IConnectionManager {
       }
 
       // wait for another round
-      await new Promise((r) => setTimeout(r, timeout));
+      await new Promise(r => setTimeout(r, timeout));
     }
 
     if (!connection || isTTLExpired(connection.ttl)) {
@@ -172,7 +172,7 @@ export class DynamoDBConnectionManager implements IConnectionManager {
       id: connectionId,
       data: { endpoint, context: {}, isInitialized: false },
     };
-    if (this.debug) console.log(`Connected ${connection.id}`, connection.data);
+    if (this.debug) {console.log(`Connected ${connection.id}`, connection.data);}
     await this.db
       .put({
         TableName: this.connectionsTable,
@@ -226,7 +226,7 @@ export class DynamoDBConnectionManager implements IConnectionManager {
   };
 
   closeConnection = async ({ id, data }: DynamoDBConnection): Promise<void> => {
-    if (this.debug) console.log('Disconnected ', id);
+    if (this.debug) {console.log('Disconnected ', id);}
     await this.createApiGatewayManager(data.endpoint)
       .deleteConnection({ ConnectionId: id })
       .promise();

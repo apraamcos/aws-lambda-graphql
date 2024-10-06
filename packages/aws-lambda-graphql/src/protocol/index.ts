@@ -1,4 +1,4 @@
-import { DocumentNode, ExecutionResult } from 'graphql';
+import type { DocumentNode, ExecutionResult } from 'graphql';
 
 export enum CLIENT_EVENT_TYPES {
   GQL_START = 'start',

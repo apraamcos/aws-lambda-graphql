@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { IEventStore, OperationRequest, SubcribeResolveFn } from './types';
+import type { IEventStore, OperationRequest, SubcribeResolveFn } from './types';
 
 interface PubSubOptions {
   /**
@@ -71,7 +71,7 @@ export class PubSub {
           operation as OperationRequest & { operationId: string },
         );
         if (this.debug)
-          console.log('Create subscription', names, connection, operation);
+          {console.log('Create subscription', names, connection, operation);}
       }
 
       return pubSub.asyncIterator(names) as AsyncIterable<any> &

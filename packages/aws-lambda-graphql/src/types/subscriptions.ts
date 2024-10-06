@@ -1,5 +1,5 @@
-import { IConnection } from './connections';
-import { IdentifiedOperationRequest, OperationRequest } from './operations';
+import type { IConnection } from './connections';
+import type { IdentifiedOperationRequest, OperationRequest } from './operations';
 
 export interface ISubscriptionEvent {
   event: string;

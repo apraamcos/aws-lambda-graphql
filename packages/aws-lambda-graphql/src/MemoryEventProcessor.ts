@@ -1,11 +1,11 @@
-import { ExecutionResult } from 'graphql';
+import type { ExecutionResult } from 'graphql';
 import { getAsyncIterator, isAsyncIterable } from 'iterall';
 import { ArrayPubSub } from './ArrayPubSub';
 import { formatMessage } from './formatMessage';
 import { execute } from './execute';
-import { ISubscriptionEvent, IEventProcessor } from './types';
+import type { ISubscriptionEvent, IEventProcessor } from './types';
 import { SERVER_EVENT_TYPES } from './protocol';
-import { Server } from './Server';
+import type { Server } from './Server';
 
 // polyfill Symbol.asyncIterator
 if (Symbol.asyncIterator === undefined) {
@@ -41,7 +41,7 @@ export class MemoryEventProcessor<TServer extends Server = Server>
           event,
         )) {
           const promises = subscribers
-            .map(async (subscriber) => {
+            .map(async subscriber => {
               // create PubSub for this subscriber
               const pubSub = new ArrayPubSub([event]);
 
@@ -80,7 +80,7 @@ export class MemoryEventProcessor<TServer extends Server = Server>
 
               return Promise.resolve();
             })
-            .map((promise) => promise.catch((e) => console.log(e)));
+            .map(promise => promise.catch(e => console.log(e)));
 
           await Promise.all(promises);
         }

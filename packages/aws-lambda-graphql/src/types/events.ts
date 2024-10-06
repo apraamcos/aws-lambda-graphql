@@ -1,5 +1,5 @@
-import { Handler as LambdaHandler } from 'aws-lambda';
-import { ISubscriptionEvent } from './subscriptions';
+import type { Handler as LambdaHandler } from 'aws-lambda';
+import type { ISubscriptionEvent } from './subscriptions';
 
 export interface IEventStore {
   publish(event: ISubscriptionEvent): Promise<any>;

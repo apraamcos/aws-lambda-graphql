@@ -1,14 +1,14 @@
-import {
-  GQLClientAllEvents,
+import type {GQLClientAllEvents,
   GQLStopOperation,
-  GQLConnectionInit,
+  GQLConnectionInit} from '../protocol';
+import {
   isGQLConnectionInit,
   isGQLOperation,
   isGQLStopOperation,
   isGQLConnectionTerminate,
 } from '../protocol';
 import { ExtendableError } from '../errors';
-import { APIGatewayWebSocketEvent, IdentifiedOperationRequest } from '../types';
+import type { APIGatewayWebSocketEvent, IdentifiedOperationRequest } from '../types';
 
 export class MalformedOperationError extends ExtendableError {
   constructor(reason?: string) {

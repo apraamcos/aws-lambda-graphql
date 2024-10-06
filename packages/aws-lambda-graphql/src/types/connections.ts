@@ -19,7 +19,7 @@ export interface IConnectionData {
    * This data is passed to graphql resolvers' context
    * All values should be JSON serializable
    */
-  context: Object;
+  context: object;
 
   /**
    * Indicates whether connection sent GQL_CONNECTION_INIT message or
@@ -52,7 +52,7 @@ export interface IConnectionManager {
     connectionId: string,
     options?: HydrateConnectionOptions,
   ): Promise<IConnection>;
-  setConnectionData(data: Object, connection: IConnection): Promise<void>;
+  setConnectionData(data: object, connection: IConnection): Promise<void>;
   registerConnection(event: IConnectEvent): Promise<IConnection>;
   sendToConnection(
     connection: IConnection,

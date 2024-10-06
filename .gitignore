@@ -1,6 +1,13 @@
 node_modules
+.env
 dist
 *.log
-.netlify
-tsconfig.tsbuildinfo
-.vscode
+*.npmrc
+.cdk.staging
+cdk.out
+.eslintcache
+launch.json
+.DS_Store
+snowflake.log
+cdk.context.json
+.swc

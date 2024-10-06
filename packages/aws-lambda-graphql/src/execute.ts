@@ -1,21 +1,21 @@
-import { APIGatewayEvent, Context as LambdaContext } from 'aws-lambda';
-import {
-  ASTVisitor,
+import type { APIGatewayEvent, Context as LambdaContext } from 'aws-lambda';
+import type {ASTVisitor,
   DocumentNode,
-  getOperationAST,
   GraphQLSchema,
-  execute as gqlExecute,
   ExecutionArgs,
   SubscriptionArgs,
   ExecutionResult,
+  ValidationContext} from 'graphql';
+import {
+  getOperationAST,
+  execute as gqlExecute,
   parse,
   specifiedRules,
   subscribe as gqlSubscribe,
-  validate,
-  ValidationContext,
+  validate
 } from 'graphql';
-import { PubSubEngine } from 'graphql-subscriptions';
-import {
+import type { PubSubEngine } from 'graphql-subscriptions';
+import type {
   APIGatewayWebSocketEvent,
   IConnection,
   IContext,

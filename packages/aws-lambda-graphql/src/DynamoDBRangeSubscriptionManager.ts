@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { DynamoDB } from 'aws-sdk';
-import {
+import type {
   IConnection,
   ISubscriber,
   ISubscriptionManager,
@@ -93,7 +93,7 @@ export class DynamoDBRangeSubscriptionManager implements ISubscriptionManager {
     subscriptionsTableName = 'Subscriptions',
     subscriptionOperationsTableName = 'SubscriptionOperations',
     ttl = DEFAULT_TTL,
-    getSubscriptionNameFromEvent = (event) => event.event,
+    getSubscriptionNameFromEvent = event => event.event,
   }: DynamoDBSubscriptionManagerOptions = {}) {
     assert.ok(
       typeof subscriptionOperationsTableName === 'string',
@@ -187,7 +187,7 @@ export class DynamoDBRangeSubscriptionManager implements ISubscriptionManager {
     await this.db
       .batchWrite({
         RequestItems: {
-          [this.subscriptionsTableName]: names.map((name) => ({
+          [this.subscriptionsTableName]: names.map(name => ({
             PutRequest: {
               Item: {
                 connection,
@@ -199,7 +199,7 @@ export class DynamoDBRangeSubscriptionManager implements ISubscriptionManager {
               } as DynamoDBSubscriber,
             },
           })),
-          [this.subscriptionOperationsTableName]: names.map((name) => ({
+          [this.subscriptionOperationsTableName]: names.map(name => ({
             PutRequest: {
               Item: {
                 subscriptionId,
@@ -260,13 +260,13 @@ export class DynamoDBRangeSubscriptionManager implements ISubscriptionManager {
       await this.db
         .batchWrite({
           RequestItems: {
-            [this.subscriptionsTableName]: operation.Items.map((item) => ({
+            [this.subscriptionsTableName]: operation.Items.map(item => ({
               DeleteRequest: {
                 Key: { event: item.event, subscriptionId: item.subscriptionId },
               },
             })),
             [this.subscriptionOperationsTableName]: operation.Items.map(
-              (item) => ({
+              item => ({
                 DeleteRequest: {
                   Key: {
                     subscriptionId: item.subscriptionId,
@@ -304,12 +304,12 @@ export class DynamoDBRangeSubscriptionManager implements ISubscriptionManager {
       await this.db
         .batchWrite({
           RequestItems: {
-            [this.subscriptionsTableName]: Items.map((item) => ({
+            [this.subscriptionsTableName]: Items.map(item => ({
               DeleteRequest: {
                 Key: { event: item.event, subscriptionId: item.subscriptionId },
               },
             })),
-            [this.subscriptionOperationsTableName]: Items.map((item) => ({
+            [this.subscriptionOperationsTableName]: Items.map(item => ({
               DeleteRequest: {
                 Key: { subscriptionId: item.subscriptionId, event: item.event },
               },

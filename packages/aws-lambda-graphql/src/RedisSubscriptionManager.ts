@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { Redis } from 'ioredis';
-import {
+import type { Redis } from 'ioredis';
+import type {
   IConnection,
   ISubscriber,
   ISubscriptionManager,
@@ -84,8 +84,8 @@ export class RedisSubscriptionManager implements ISubscriptionManager {
 
   constructor({
     redisClient,
-    getSubscriptionNameFromEvent = (event) => event.event,
-    getSubscriptionNameFromConnection = (name) => name,
+    getSubscriptionNameFromEvent = event => event.event,
+    getSubscriptionNameFromConnection = name => name,
   }: RedisSubscriptionManagerOptions) {
     assert.ok(
       redisClient == null || typeof redisClient === 'object',

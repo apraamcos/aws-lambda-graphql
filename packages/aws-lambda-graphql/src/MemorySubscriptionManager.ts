@@ -1,5 +1,5 @@
 import { createAsyncIterator } from 'iterall';
-import {
+import type {
   IConnection,
   ISubscriber,
   ISubscriptionEvent,
@@ -45,8 +45,8 @@ export class MemorySubscriptionManager implements ISubscriptionManager {
   ) => string;
 
   constructor({
-    getSubscriptionNameFromEvent = (event) => event.event,
-    getSubscriptionNameFromConnection = (name) => name,
+    getSubscriptionNameFromEvent = event => event.event,
+    getSubscriptionNameFromConnection = name => name,
   }: MemorySubscriptionManagerOptions = {}) {
     this.subscriptions = new Map();
     this.getSubscriptionNameFromEvent = getSubscriptionNameFromEvent;
@@ -62,7 +62,7 @@ export class MemorySubscriptionManager implements ISubscriptionManager {
         const subscriptions = this.subscriptions.get(name) || [];
 
         const subscribers = subscriptions.filter(
-          (subscriber) => subscriber.event === name,
+          subscriber => subscriber.event === name,
         );
 
         return createAsyncIterator([subscribers]);
@@ -75,7 +75,7 @@ export class MemorySubscriptionManager implements ISubscriptionManager {
     connection: IConnection,
     operation: OperationRequest & { operationId: string },
   ): Promise<void> => {
-    names.forEach((n) => {
+    names.forEach(n => {
       const name = this.getSubscriptionNameFromConnection(n, connection);
       const subscriptions = this.subscriptions.get(name);
       const subscription = {
@@ -88,7 +88,7 @@ export class MemorySubscriptionManager implements ISubscriptionManager {
       if (subscriptions == null) {
         this.subscriptions.set(name, [subscription]);
       } else if (
-        !subscriptions.find((s) => s.connection.id === connection.id)
+        !subscriptions.find(s => s.connection.id === connection.id)
       ) {
         subscriptions.push({
           connection,
@@ -107,7 +107,7 @@ export class MemorySubscriptionManager implements ISubscriptionManager {
       this.subscriptions.set(
         subscriber.event,
         subscriptions.filter(
-          (s) => s.connection.id !== subscriber.connection.id,
+          s => s.connection.id !== subscriber.connection.id,
         ),
       );
     }
@@ -118,7 +118,7 @@ export class MemorySubscriptionManager implements ISubscriptionManager {
       this.subscriptions.set(
         event,
         subscribers.filter(
-          (subscriber) =>
+          subscriber =>
             subscriber.connection.id !== connectionId &&
             subscriber.operationId !== operationId,
         ),
@@ -132,7 +132,7 @@ export class MemorySubscriptionManager implements ISubscriptionManager {
         key,
         this.subscriptions
           .get(key)!
-          .filter((s) => s.connection.id === connectionId),
+          .filter(s => s.connection.id === connectionId),
       );
     }
 

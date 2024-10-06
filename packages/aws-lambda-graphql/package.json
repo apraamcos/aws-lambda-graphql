@@ -1,6 +1,7 @@
 {
   "name": "aws-lambda-graphql",
-  "version": "1.0.0-alpha.24",
+  "type": "module",
+  "version": "2.0.0",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "bugs": {
@@ -10,7 +11,6 @@
     "type": "git",
     "url": "https://github.com/michalkvasnicak/aws-lambda-graphql"
   },
-  "sideEffects": false,
   "keywords": [
     "apollo",
     "aws",
@@ -25,11 +25,8 @@
     "serverless"
   ],
   "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
+    "dist"
   ],
-  "description": "Apollo server for AWS Lambda with WebSocket subscriptions support over API Gateway v1 + v2",
   "dependencies": {
     "@types/aws-lambda": "^8.10.36",
     "@types/ioredis": "^4.16.6",
@@ -44,10 +41,6 @@
     "graphql-subscriptions": "^1.0.0",
     "ioredis": "^4.17.3"
   },
-  "engines": {
-    "node": ">=10"
-  },
-  "engineStrict": true,
   "devDependencies": {
     "apollo-link": "^1.2.11",
     "graphql-tag": "^2.10.1",

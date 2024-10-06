@@ -1,6 +1,6 @@
-import { GraphQLResolveInfo } from 'graphql';
+import type { GraphQLResolveInfo } from 'graphql';
 import { $$asyncIterator } from 'iterall';
-import { IContext, SubcribeResolveFn } from './types';
+import type { IContext, SubcribeResolveFn } from './types';
 
 export type FilterFn = (
   rootValue?: any,
@@ -17,14 +17,14 @@ function withFilter(
     const asyncIterator = await asyncIteratorFn(rootValue, args, context, info);
 
     const getNextPromise = (): Promise<any> => {
-      return asyncIterator.next().then((payload) => {
+      return asyncIterator.next().then(payload => {
         if (payload.done === true) {
           return payload;
         }
 
         return Promise.resolve(
           filterFn(payload.value, args, context, info),
-        ).then((filterResult) => {
+        ).then(filterResult => {
           if (filterResult === true) {
             return payload;
           }

@@ -1,10 +1,10 @@
-import { APIGatewayEvent, Context as LambdaContext } from 'aws-lambda';
-import { GraphQLResolveInfo } from 'graphql';
-import { PubSubEngine } from 'graphql-subscriptions';
-import { APIGatewayWebSocketEvent } from './aws';
-import { IConnection, IConnectionManager } from './connections';
-import { ISubscriptionManager } from './subscriptions';
-import { OperationRequest } from './operations';
+import type { APIGatewayEvent, Context as LambdaContext } from 'aws-lambda';
+import type { GraphQLResolveInfo } from 'graphql';
+import type { PubSubEngine } from 'graphql-subscriptions';
+import type { APIGatewayWebSocketEvent } from './aws';
+import type { IConnection, IConnectionManager } from './connections';
+import type { ISubscriptionManager } from './subscriptions';
+import type { OperationRequest } from './operations';
 
 /**
  * Superset of context passed to every operation invoked by websocket

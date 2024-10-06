@@ -1,4 +1,4 @@
-import { APIGatewayWebSocketEvent } from '../types';
+import type { APIGatewayWebSocketEvent } from '../types';
 
 export function extractEndpointFromEvent(
   event: APIGatewayWebSocketEvent,

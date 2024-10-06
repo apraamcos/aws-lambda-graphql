@@ -1,5 +1,5 @@
 import { createAsyncIterator } from 'iterall';
-import { ISubscriptionEvent } from './types';
+import type { ISubscriptionEvent } from './types';
 
 /**
  * Array PubSub works as local PubSub that is already fed with all the events that were published
@@ -37,8 +37,8 @@ export class ArrayPubSub {
 
     return createAsyncIterator(
       this.events
-        .filter((event) => names.includes(event.event))
-        .map((event) =>
+        .filter(event => names.includes(event.event))
+        .map(event =>
           typeof event.payload === 'string'
             ? JSON.parse(event.payload)
             : event.payload,

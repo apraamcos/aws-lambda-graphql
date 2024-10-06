@@ -1,14 +1,14 @@
-import { DynamoDBStreamHandler } from 'aws-lambda';
+import type { DynamoDBStreamHandler } from 'aws-lambda';
 import { DynamoDB } from 'aws-sdk';
 import { isAsyncIterable, getAsyncIterator } from 'iterall';
-import { ExecutionResult } from 'graphql';
+import type { ExecutionResult } from 'graphql';
 import { ArrayPubSub } from './ArrayPubSub';
-import { IEventProcessor } from './types';
+import type { IEventProcessor } from './types';
 import { formatMessage } from './formatMessage';
 import { execute } from './execute';
 import { SERVER_EVENT_TYPES } from './protocol';
-import { Server } from './Server';
-import { IDynamoDBSubscriptionEvent } from './DynamoDBEventStore';
+import type { Server } from './Server';
+import type { IDynamoDBSubscriptionEvent } from './DynamoDBEventStore';
 import { isTTLExpired } from './helpers/isTTLExpired';
 
 interface DynamoDBEventProcessorOptions {
@@ -62,7 +62,7 @@ export class DynamoDBEventProcessor<TServer extends Server = Server>
 
         // skip if event is expired
         if (isTTLExpired(event.ttl)) {
-          if (this.debug) this.log('Discarded event : TTL expired', event);
+          if (this.debug) {this.log('Discarded event : TTL expired', event);}
           continue;
         }
 
@@ -81,7 +81,7 @@ export class DynamoDBEventProcessor<TServer extends Server = Server>
           event,
         )) {
           const promises = subscribers
-            .map(async (subscriber) => {
+            .map(async subscriber => {
               // create PubSub for this subscriber
               const pubSub = new ArrayPubSub([event]);
 
@@ -121,7 +121,7 @@ export class DynamoDBEventProcessor<TServer extends Server = Server>
               const result: IteratorResult<ExecutionResult> = await iterator.next();
 
               if (result.value != null) {
-                if (this.debug) this.log('Send event ', result);
+                if (this.debug) {this.log('Send event ', result);}
                 return connectionManager.sendToConnection(
                   subscriber.connection,
                   formatMessage({
@@ -134,7 +134,7 @@ export class DynamoDBEventProcessor<TServer extends Server = Server>
 
               return Promise.resolve();
             })
-            .map((promise) => promise.catch(this.onError));
+            .map(promise => promise.catch(this.onError));
 
           await Promise.all(promises);
         }

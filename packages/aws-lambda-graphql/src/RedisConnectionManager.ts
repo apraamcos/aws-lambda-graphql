@@ -1,8 +1,8 @@
 import assert from 'assert';
 import { ApiGatewayManagementApi } from 'aws-sdk';
-import { Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 import { ConnectionNotFoundError } from './errors';
-import {
+import type {
   IConnection,
   IConnectEvent,
   IConnectionManager,
@@ -78,7 +78,7 @@ export class RedisConnectionManager implements IConnectionManager {
         break;
       }
       // wait for another round
-      await new Promise((r) => setTimeout(r, timeout));
+      await new Promise(r => setTimeout(r, timeout));
     }
 
     if (!connection) {

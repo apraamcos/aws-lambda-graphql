@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { DynamoDB } from 'aws-sdk';
 import { ulid } from 'ulid';
-import { IEventStore, ISubscriptionEvent } from './types';
+import type { IEventStore, ISubscriptionEvent } from './types';
 import { computeTTL } from './helpers';
 
 export interface IDynamoDBSubscriptionEvent extends ISubscriptionEvent {

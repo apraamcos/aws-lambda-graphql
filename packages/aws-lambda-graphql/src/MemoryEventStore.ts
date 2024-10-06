@@ -1,4 +1,4 @@
-import { IEventStore, ISubscriptionEvent } from './types';
+import type { IEventStore, ISubscriptionEvent } from './types';
 
 export class MemoryEventStore implements IEventStore {
   public events: ISubscriptionEvent[];

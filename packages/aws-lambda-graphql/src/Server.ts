@@ -1,20 +1,20 @@
-import {
-  ApolloServer,
-  Config,
+import type {Config,
   CreateHandlerOptions,
-  GraphQLOptions,
+  GraphQLOptions} from 'apollo-server-lambda';
+import {
+  ApolloServer
 } from 'apollo-server-lambda';
 import assert from 'assert';
-import {
+import type {
   APIGatewayProxyResult,
   APIGatewayProxyEvent,
   Context as LambdaContext,
   Handler as LambdaHandler,
 } from 'aws-lambda';
 import { isAsyncIterable } from 'iterall';
-import { ExecutionResult } from 'graphql';
+import type { ExecutionResult } from 'graphql';
 import { PubSub } from 'graphql-subscriptions';
-import {
+import type {
   APIGatewayWebSocketEvent,
   IConnectionManager,
   IContext,
@@ -32,7 +32,8 @@ import {
   isGQLConnectionTerminate,
 } from './protocol';
 import { formatMessage } from './formatMessage';
-import { execute, ExecutionParams } from './execute';
+import type { ExecutionParams } from './execute';
+import { execute } from './execute';
 
 interface ExtraGraphQLOptions extends GraphQLOptions {
   $$internal: IContext['$$internal'];
@@ -160,7 +161,7 @@ export class Server<
         // if it's object, merge it with integrationContext
         typeof context === 'function'
           ? (integrationContext: IContext) =>
-              Promise.resolve(context(integrationContext)).then((ctx) => ({
+              Promise.resolve(context(integrationContext)).then(ctx => ({
                 ...ctx,
                 ...integrationContext,
               }))
@@ -193,7 +194,7 @@ export class Server<
 
     this.connectionManager = connectionManager;
     this.eventProcessor = eventProcessor;
-    this.onError = onError || ((err) => console.error(err));
+    this.onError = onError || (err => console.error(err));
     this.subscriptionManager = subscriptionManager;
     this.subscriptionOptions = subscriptions;
   }
@@ -231,7 +232,7 @@ export class Server<
           ? $$internal.connection.data.context
           : {}),
       })
-      .then((options) => ({ ...options, $$internal }));
+      .then(options => ({ ...options, $$internal }));
   }
 
   /**
@@ -477,7 +478,7 @@ export class Server<
                 }
 
                 // wait for another round
-                await new Promise((r) => setTimeout(r, waitTimeout));
+                await new Promise(r => setTimeout(r, waitTimeout));
               }
 
               return freshConnection;

@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { DynamoDB } from 'aws-sdk';
-import {
+import type {
   IConnection,
   ISubscriber,
   ISubscriptionManager,
@@ -105,8 +105,8 @@ export class DynamoDBSubscriptionManager implements ISubscriptionManager {
     subscriptionsTableName = 'Subscriptions',
     subscriptionOperationsTableName = 'SubscriptionOperations',
     ttl = DEFAULT_TTL,
-    getSubscriptionNameFromEvent = (event) => event.event,
-    getSubscriptionNameFromConnection = (name) => name,
+    getSubscriptionNameFromEvent = event => event.event,
+    getSubscriptionNameFromConnection = name => name,
   }: DynamoDBSubscriptionManagerOptions = {}) {
     assert.ok(
       typeof subscriptionOperationsTableName === 'string',
@@ -333,7 +333,7 @@ export class DynamoDBSubscriptionManager implements ISubscriptionManager {
         await this.db
           .batchWrite({
             RequestItems: {
-              [this.subscriptionsTableName]: Items.map((item) => ({
+              [this.subscriptionsTableName]: Items.map(item => ({
                 DeleteRequest: {
                   Key: {
                     event: item.event,
@@ -341,7 +341,7 @@ export class DynamoDBSubscriptionManager implements ISubscriptionManager {
                   },
                 },
               })),
-              [this.subscriptionOperationsTableName]: Items.map((item) => ({
+              [this.subscriptionOperationsTableName]: Items.map(item => ({
                 DeleteRequest: {
                   Key: { subscriptionId: item.subscriptionId },
                 },
