@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && tsc",
-    "prepublishOnly": "npm version patch --no-git-tag-version && git commit -am \"[skip ci] Bump version to $(npm pkg get version | tr -d '\"')\" && npm run build"
+    "prepublishOnly": "npm version patch && git commit -am \"[skip ci] Bump version to $(npm pkg get version | tr -d '\"')\" && npm run build"
   },
   "dependencies": {
     "@types/aws-lambda": "^8.10.36",
