@@ -1,11 +1,6 @@
-import type * as WebSocket from 'ws';
-import { ExtendableError } from './errors';
-import type {
-  IConnection,
-  IConnectEvent,
-  IConnectionManager,
-  IConnectionData,
-} from './types';
+import type * as WebSocket from "ws";
+import { ExtendableError } from "./errors";
+import type { IConnection, IConnectEvent, IConnectionManager, IConnectionData } from "./types";
 
 export class ConnectionNotFoundError extends ExtendableError {}
 
@@ -35,26 +30,23 @@ export class WebSocketConnectionManager implements IConnectionManager {
     return connection;
   };
 
-  setConnectionData = async (
-    data: IConnectionData,
-    connection: WSConnection,
-  ): Promise<void> => {
+  setConnectionData = async (data: IConnectionData, connection: WSConnection): Promise<void> => {
     this.connections.set(connection.id, {
       socket: connection.socket,
       id: connection.id,
-      data,
+      data
     });
   };
 
   registerConnection = async ({
     connectionId,
     endpoint,
-    socket,
+    socket
   }: WSConnectEvent): Promise<WSConnection> => {
     const connection: WSConnection = {
       socket,
       id: connectionId,
-      data: { endpoint, context: {}, isInitialized: false },
+      data: { endpoint, context: {}, isInitialized: false }
     };
 
     this.connections.set(connectionId, connection);
@@ -62,15 +54,10 @@ export class WebSocketConnectionManager implements IConnectionManager {
     return connection;
   };
 
-  sendToConnection = (
-    connection: WSConnection,
-    payload: string | Buffer,
-  ): Promise<void> => {
+  sendToConnection = (connection: WSConnection, payload: string | Buffer): Promise<void> => {
     return new Promise((resolve, reject) => {
       try {
-        connection.socket.send(payload, err =>
-          err ? reject(err) : resolve(),
-        );
+        connection.socket.send(payload);
       } catch (e) {
         reject(e);
       }

@@ -1,5 +1,5 @@
 {
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "build": "npm run build -w @cj-tech-master/aws-lambda-graphql",
     "publish": "cd packages/aws-lambda-graphql && npm publish --access public",
