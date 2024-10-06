@@ -36,6 +36,6 @@
   },
   "scripts": {
     "build": "rimraf dist && tsc",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm version patch -m \"[skip ci] Bump version to %s\" && npm run build"
   }
 }
