@@ -2,7 +2,7 @@
   "name": "@cj-tech-master/aws-lambda-graphql",
   "license": "MIT",
   "type": "module",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "repository": {
@@ -12,6 +12,10 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "prepublishOnly": "npm version patch -m \"[skip ci] Bump version to %s\" && npm run build"
+  },
   "dependencies": {
     "@types/aws-lambda": "^8.10.36",
     "@types/ioredis": "^4.16.6",
@@ -33,9 +37,5 @@
     "mock-socket": "^8.0.5",
     "subscriptions-transport-ws": "^0.9.16",
     "wait-for-expect": "1.1.0"
-  },
-  "scripts": {
-    "build": "rimraf dist && tsc",
-    "prepublishOnly": "npm version patch -m \"[skip ci] Bump version to %s\" && npm run build"
   }
 }
