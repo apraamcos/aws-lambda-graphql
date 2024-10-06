@@ -1,29 +1,14 @@
 {
-  "name": "aws-lambda-graphql",
+  "name": "@cj-tech-master/aws-lambda-graphql",
+  "license": "MIT",
   "type": "module",
   "version": "2.0.0",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
-  "bugs": {
-    "url": "https://github.com/michalkvasnicak/aws-lambda-graphql/issues"
-  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/michalkvasnicak/aws-lambda-graphql"
+    "url": "https://github.com/cjnoname/aws-lambda-graphql.git"
   },
-  "keywords": [
-    "apollo",
-    "aws",
-    "lambda",
-    "apollo",
-    "graphql",
-    "subscriptions",
-    "apigateway",
-    "websocket",
-    "http",
-    "graphql-subscriptions",
-    "serverless"
-  ],
   "files": [
     "dist"
   ],
@@ -50,8 +35,7 @@
     "wait-for-expect": "1.1.0"
   },
   "scripts": {
-    "prebuild": "rimraf dist && rimraf tsconfig.tsbuildinfo",
-    "build": "tsc -p .",
-    "prepublishOnly": "rimraf dist && rimraf tsconfig.tsbuildinfo && tsc -p ."
+    "build": "rimraf dist && tsc",
+    "prepublishOnly": "npm run build"
   }
 }

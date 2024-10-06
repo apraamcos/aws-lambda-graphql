@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "build": "tsc -b .",
+    "build": "npm run build -w aws-lambda-graphql",
     "lint": "eslint",
     "lint-fix": "eslint --fix",
     "test": "jest",
