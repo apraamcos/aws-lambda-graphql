@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "aws-sdk": "^2.577.0",
-    "graphql": "^15.5.0",
-    "graphql-subscriptions": "^1.1.0"
+    "graphql": "^16.9.0",
+    "graphql-subscriptions": "^2.0.0"
   },
   "peerDependencies": {
     "@eslint/js": "9.12.0",

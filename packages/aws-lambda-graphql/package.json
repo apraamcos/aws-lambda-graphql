@@ -17,25 +17,21 @@
     "prepublishOnly": "npm version patch && git commit -am \"[skip ci] Bump version to $(npm pkg get version | tr -d '\"')\" && npm run build"
   },
   "dependencies": {
-    "@types/aws-lambda": "^8.10.36",
-    "@types/ioredis": "^4.16.6",
-    "apollo-server-core": "^2.9.14",
-    "apollo-server-lambda": "^2.9.14",
+    "@apollo/server": "4.11.0",
+    "@types/aws-lambda": "^8.10.145",
     "iterall": "^1.2.2",
-    "ulid": "^2.3.0"
+    "ulidx": "^2.4.1"
   },
   "peerDependencies": {
     "aws-sdk": "^2.387.0",
-    "graphql": "^14.x || ^15.x",
-    "graphql-subscriptions": "^1.0.0",
-    "ioredis": "^4.17.3"
+    "graphql": "^14.x || ^15.x || ^16.x",
+    "graphql-subscriptions": "^2.0.0"
   },
   "devDependencies": {
-    "apollo-link": "^1.2.11",
     "graphql-tag": "^2.10.1",
-    "graphql-tools": "^4.0.6",
+    "graphql-tools": "^9.0.1",
     "mock-socket": "^8.0.5",
-    "subscriptions-transport-ws": "^0.9.16",
+    "subscriptions-transport-ws": "^0.11.0",
     "wait-for-expect": "1.1.0"
   }
 }

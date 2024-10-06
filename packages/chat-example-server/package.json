@@ -3,12 +3,12 @@
   "private": true,
   "version": "1.0.0-alpha.24",
   "dependencies": {
-    "@cj-tech-master/aws-lambda-graphql": "2.0.2",
-    "graphql": "^15.5.0",
-    "ulid": "^2.3.0"
+    "@cj-tech-master/aws-lambda-graphql": "2.0.7",
+    "graphql": "^16.9.0",
+    "ulidx": "^2.4.1"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.36",
+    "@types/aws-lambda": "^8.10.145",
     "babel-loader": "^8.0.6",
     "serverless": "^1.58.0",
     "serverless-dynamodb-local": "^0.2.38",
