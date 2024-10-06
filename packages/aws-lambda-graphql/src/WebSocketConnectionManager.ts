@@ -1,4 +1,4 @@
-import type * as WebSocket from "ws";
+import type WebSocket from "ws";
 import { ExtendableError } from "./errors";
 import type { IConnection, IConnectEvent, IConnectionManager, IConnectionData } from "./types";
 
@@ -57,7 +57,7 @@ export class WebSocketConnectionManager implements IConnectionManager {
   sendToConnection = (connection: WSConnection, payload: string | Buffer): Promise<void> => {
     return new Promise((resolve, reject) => {
       try {
-        connection.socket.send(payload);
+        connection.socket.send(payload, err => (err ? reject(err) : resolve()));
       } catch (e) {
         reject(e);
       }
