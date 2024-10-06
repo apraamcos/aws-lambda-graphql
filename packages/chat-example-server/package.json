@@ -8,15 +8,7 @@
     "ulidx": "^2.4.1"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.145",
-    "babel-loader": "^8.0.6",
-    "serverless": "^1.58.0",
-    "serverless-dynamodb-local": "^0.2.38",
-    "serverless-offline": "^5.12.1",
-    "serverless-plugin-offline-dynamodb-stream": "^1.0.19",
-    "serverless-webpack": "^5.3.1",
-    "webpack": "^4.41.4",
-    "webpack-node-externals": "^1.7.2"
+    "@types/aws-lambda": "^8.10.145"
   },
   "scripts": {
     "deploy": "sls deploy",
