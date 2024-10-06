@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "build": "npm run build -w aws-lambda-graphql",
+    "build": "npm run build -w @cj-tech-master/aws-lambda-graphql",
     "publish": "cd packages/aws-lambda-graphql && npm publish --access public",
     "lint": "eslint",
     "lint-fix": "eslint --fix",
