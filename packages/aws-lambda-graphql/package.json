@@ -2,7 +2,7 @@
   "name": "@cj-tech-master/aws-lambda-graphql",
   "license": "MIT",
   "type": "module",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "repository": {
@@ -14,6 +14,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && tsc",
+    "aa": "npm version patch --no-git-tag-version && git commit -am \"[skip ci] Bump version to $(npm pkg get version | tr -d '\"')\"",
     "prepublishOnly": "npm version patch -m \"[skip ci] Bump version to %s\" && npm run build"
   },
   "dependencies": {
