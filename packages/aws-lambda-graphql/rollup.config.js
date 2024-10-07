@@ -16,7 +16,8 @@ const entry = ({ entryName, isBinEntry }) =>
     plugins: [
       json(),
       nodeResolve({
-        exportConditions: ["node"]
+        exportConditions: ["node"],
+        preferBuiltins: true
       }),
       swc(),
       minify({
