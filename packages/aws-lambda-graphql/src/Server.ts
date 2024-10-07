@@ -41,6 +41,7 @@ type Options = Pick<
 
 interface ExtraGraphQLOptions extends Options {
   $$internal: IContext["$$internal"];
+  context?: object | ((contextParams: IContext) => object | Promise<object>);
 }
 
 export interface ServerConfig<TServer extends object, TEventHandler extends LambdaHandler>
@@ -195,16 +196,19 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
       subscriptionManager: this.subscriptionManager
     };
 
-    return super
-      .graphQLServerOptions({
-        event,
-        lambdaContext: context,
-        $$internal,
-        ...($$internal.connection && $$internal.connection.data
-          ? $$internal.connection.data.context
-          : {})
-      })
-      .then(options => ({ ...options, $$internal }));
+    const gqlContext = {
+      event,
+      lambdaContext: context,
+      $$internal,
+      ...($$internal.connection && $$internal.connection.data
+        ? $$internal.connection.data.context
+        : {})
+    };
+    return {
+      ...this.apolloConfig,
+      context: gqlContext,
+      $$internal
+    };
   }
 
   /**
