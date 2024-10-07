@@ -1,4 +1,8 @@
-import { ApolloServer, type ApolloServerOptions } from "@apollo/server";
+import {
+  ApolloServer,
+  type ApolloServerOptions,
+  type ApolloServerOptionsWithSchema
+} from "@apollo/server";
 import assert from "assert";
 import type {
   APIGatewayProxyResult,
@@ -40,7 +44,7 @@ interface ExtraGraphQLOptions extends Options {
 }
 
 export interface ServerConfig<TServer extends object, TEventHandler extends LambdaHandler>
-  extends ApolloServer<any> {
+  extends ApolloServerOptionsWithSchema<any> {
   /**
    * Connection manager takes care of
    *  - registering/unregistering WebSocket connections
@@ -129,6 +133,8 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
 
   private subscriptionOptions: ServerConfig<Server, TEventHandler>["subscriptions"];
 
+  private apolloConfig: ApolloServerOptionsWithSchema<any>;
+
   constructor({
     connectionManager,
     context,
@@ -160,6 +166,7 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
       "Property subscriptions must be an object"
     );
 
+    this.apolloConfig = restConfig;
     this.connectionManager = connectionManager;
     this.eventProcessor = eventProcessor;
     this.onError = onError || (err => console.error(err));
