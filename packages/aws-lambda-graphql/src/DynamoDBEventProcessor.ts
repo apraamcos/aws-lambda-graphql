@@ -1,15 +1,15 @@
-import type { DynamoDBStreamHandler } from 'aws-lambda';
-import { DynamoDB } from 'aws-sdk';
-import { isAsyncIterable, getAsyncIterator } from 'iterall';
-import type { ExecutionResult } from 'graphql';
-import { ArrayPubSub } from './ArrayPubSub';
-import type { IEventProcessor } from './types';
-import { formatMessage } from './formatMessage';
-import { execute } from './execute';
-import { SERVER_EVENT_TYPES } from './protocol';
-import type { Server } from './Server';
-import type { IDynamoDBSubscriptionEvent } from './DynamoDBEventStore';
-import { isTTLExpired } from './helpers/isTTLExpired';
+import type { DynamoDBStreamHandler } from "aws-lambda";
+import { DynamoDB } from "aws-sdk";
+import { isAsyncIterable, getAsyncIterator } from "iterall";
+import type { ExecutionResult } from "graphql";
+import { ArrayPubSub } from "./ArrayPubSub";
+import type { IEventProcessor } from "./types";
+import { formatMessage } from "./formatMessage";
+import { execute } from "./execute";
+import { SERVER_EVENT_TYPES } from "./protocol";
+import type { Server } from "./Server";
+import type { IDynamoDBSubscriptionEvent } from "./DynamoDBEventStore";
+import { isTTLExpired } from "./helpers/isTTLExpired";
 
 interface DynamoDBEventProcessorOptions {
   onError?: (err: any) => void;
@@ -30,7 +30,8 @@ interface DynamoDBEventProcessorOptions {
  * Processes DynamoDB stream event in order to send events to subscribed clients
  */
 export class DynamoDBEventProcessor<TServer extends Server = Server>
-  implements IEventProcessor<TServer, DynamoDBStreamHandler> {
+  implements IEventProcessor<TServer, DynamoDBStreamHandler>
+{
   private onError: (err: any) => void;
 
   private debug: boolean;
@@ -51,22 +52,24 @@ export class DynamoDBEventProcessor<TServer extends Server = Server>
 
       for (const record of Records) {
         // process only INSERT events
-        if (record.eventName !== 'INSERT') {
+        if (record.eventName !== "INSERT") {
           continue;
         }
 
         // now construct event from dynamodb image
         const event: IDynamoDBSubscriptionEvent = DynamoDB.Converter.unmarshall(
-          record.dynamodb!.NewImage as any,
+          record.dynamodb!.NewImage as any
         ) as any;
 
         // skip if event is expired
         if (isTTLExpired(event.ttl)) {
-          if (this.debug) {this.log('Discarded event : TTL expired', event);}
+          if (this.debug) {
+            this.log("Discarded event : TTL expired", event);
+          }
           continue;
         }
 
-        this.log('Processing event', event);
+        this.log("Processing event", event);
 
         // iterate over subscribers that listen to this event
         // and for each connection:
@@ -77,9 +80,7 @@ export class DynamoDBEventProcessor<TServer extends Server = Server>
         //  - if they are no more subscriptions, process next event
         // make sure that you won't throw any errors otherwise dynamo will call
         // handler with same events again
-        for await (const subscribers of subscriptionManager.subscribersByEvent(
-          event,
-        )) {
+        for await (const subscribers of subscriptionManager.subscribersByEvent(event)) {
           const promises = subscribers
             .map(async subscriber => {
               // create PubSub for this subscriber
@@ -93,27 +94,26 @@ export class DynamoDBEventProcessor<TServer extends Server = Server>
                   // to context from connection.data.context
                   connection: subscriber.connection,
                   operation: subscriber.operation,
-                  pubSub,
-                },
+                  pubSub
+                }
               );
 
               // execute operation by executing it and then publishing the event
               const iterable = await execute({
                 connectionManager,
                 subscriptionManager,
-                schema: options.schema,
+                schema: options.schema!,
                 event: lambdaEvent as any, // we don't have an API GW event here
                 lambdaContext,
-                context: options.context,
                 connection: subscriber.connection,
                 operation: subscriber.operation,
                 pubSub,
-                registerSubscriptions: false,
+                registerSubscriptions: false
               });
 
               if (!isAsyncIterable(iterable)) {
                 // something went wrong, probably there is an error
-                this.log('Execution result: non iterable', event);
+                this.log("Execution result: non iterable", event);
                 return Promise.resolve();
               }
 
@@ -121,14 +121,16 @@ export class DynamoDBEventProcessor<TServer extends Server = Server>
               const result: IteratorResult<ExecutionResult> = await iterator.next();
 
               if (result.value != null) {
-                if (this.debug) {this.log('Send event ', result);}
+                if (this.debug) {
+                  this.log("Send event ", result);
+                }
                 return connectionManager.sendToConnection(
                   subscriber.connection,
                   formatMessage({
                     id: subscriber.operationId,
                     payload: result.value,
-                    type: SERVER_EVENT_TYPES.GQL_DATA,
-                  }),
+                    type: SERVER_EVENT_TYPES.GQL_DATA
+                  })
                 );
               }
 

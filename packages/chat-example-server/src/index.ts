@@ -5,20 +5,20 @@ import {
   DynamoDBSubscriptionManager,
   PubSub,
   Server,
-  withFilter,
-} from 'aws-lambda-graphql';
-import { ApiGatewayManagementApi, DynamoDB } from 'aws-sdk';
-import * as assert from 'assert';
-import { ulid } from 'ulid';
+  withFilter
+} from "aws-lambda-graphql";
+import { ApiGatewayManagementApi, DynamoDB } from "aws-sdk";
+import * as assert from "assert";
+import { ulid } from "ulidx";
 
 // serverless offline support
 const dynamoDbClient = new DynamoDB.DocumentClient({
   // use serverless-dynamodb endpoint in offline mode
   ...(process.env.IS_OFFLINE
     ? {
-        endpoint: 'http://localhost:8000',
+        endpoint: "http://localhost:8000"
       }
-    : {}),
+    : {})
 });
 
 const eventStore = new DynamoDBEventStore({ dynamoDbClient });
@@ -33,14 +33,14 @@ const connectionManager = new DynamoDBConnectionManager({
   // you'll end up with errors
   apiGatewayManager: process.env.IS_OFFLINE
     ? new ApiGatewayManagementApi({
-        endpoint: 'http://localhost:3001',
+        endpoint: "http://localhost:3001"
       })
     : undefined,
   dynamoDbClient,
-  subscriptions: subscriptionManager,
+  subscriptions: subscriptionManager
 });
 
-type MessageType = 'greeting' | 'test';
+type MessageType = "greeting" | "test";
 
 type Message = {
   id: string;
@@ -84,13 +84,13 @@ const resolvers = {
       assert.ok(text.length > 0 && text.length < 100);
       const payload: Message = { id: ulid(), text, type };
 
-      await pubSub.publish('NEW_MESSAGE', payload);
+      await pubSub.publish("NEW_MESSAGE", payload);
 
       return payload;
-    },
+    }
   },
   Query: {
-    serverTime: () => Date.now(),
+    serverTime: () => Date.now()
   },
   Subscription: {
     messageFeed: {
@@ -99,7 +99,7 @@ const resolvers = {
         return rootValue;
       },
       subscribe: withFilter(
-        pubSub.subscribe('NEW_MESSAGE'),
+        pubSub.subscribe("NEW_MESSAGE"),
         (rootValue: Message, args: { type: null | MessageType }) => {
           // this can be async too :)
           if (args.type == null) {
@@ -107,10 +107,10 @@ const resolvers = {
           }
 
           return args.type === rootValue.type;
-        },
-      ),
-    },
-  },
+        }
+      )
+    }
+  }
 };
 
 const server = new Server({
@@ -122,11 +122,11 @@ const server = new Server({
   ...(process.env.IS_OFFLINE
     ? {
         playground: {
-          subscriptionEndpoint: 'ws://localhost:3001',
-        },
+          subscriptionEndpoint: "ws://localhost:3001"
+        }
       }
     : {}),
-  typeDefs,
+  typeDefs
 });
 
 export const handleHttp = server.createHttpHandler();

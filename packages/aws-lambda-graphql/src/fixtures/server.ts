@@ -1,16 +1,13 @@
-import { ulid } from 'ulid';
-import { Server as WSServer } from 'ws';
-import { PubSub } from '..';
-import { createSchema } from './schema';
-import {
-  MemoryEventProcessor,
-  EventProcessorFn,
-} from '../MemoryEventProcessor';
-import { MemoryEventStore } from '../MemoryEventStore';
-import { MemorySubscriptionManager } from '../MemorySubscriptionManager';
-import { WebSocketConnectionManager } from '../WebSocketConnectionManager';
-import { Server } from '../Server';
-import { APIGatewayV2Handler } from '../types';
+import { ulid } from "ulid";
+import { Server as WSServer } from "ws";
+import { PubSub } from "..";
+import { createSchema } from "./schema";
+import { MemoryEventProcessor, EventProcessorFn } from "../MemoryEventProcessor";
+import { MemoryEventStore } from "../MemoryEventStore";
+import { MemorySubscriptionManager } from "../MemorySubscriptionManager";
+import { WebSocketConnectionManager } from "../WebSocketConnectionManager";
+import { Server } from "../Server";
+import { APIGatewayV2Handler } from "../types";
 
 export class TestLambdaServer {
   connectionManager: WebSocketConnectionManager;
@@ -29,10 +26,7 @@ export class TestLambdaServer {
 
   wsServer: WSServer | undefined;
 
-  constructor({
-    port = 3001,
-    onConnect,
-  }: { port?: number; onConnect?: any } = {}) {
+  constructor({ port = 3001, onConnect }: { port?: number; onConnect?: any } = {}) {
     this.eventStore = new MemoryEventStore();
     this.port = port;
     this.connectionManager = new WebSocketConnectionManager();
@@ -43,13 +37,12 @@ export class TestLambdaServer {
 
     const server = new Server({
       connectionManager: this.connectionManager,
-      context: { pubSub },
       eventProcessor: new MemoryEventProcessor(),
-      schema,
+      schema: schema!,
       subscriptionManager: this.subscriptionManager,
       subscriptions: {
-        onConnect,
-      },
+        onConnect
+      }
     });
 
     this.handler = server.createWebSocketHandler();
@@ -59,9 +52,9 @@ export class TestLambdaServer {
   close = async () => {
     const wsClose = new Promise((resolve, reject) => {
       if (this.wsServer == null) {
-        reject(new Error('Server not initialized'));
+        reject(new Error("Server not initialized"));
       } else {
-        this.wsServer.close((err) => {
+        this.wsServer.close(err => {
           clearInterval(this.eventProcessingInterval!);
 
           return err ? reject(err) : resolve();
@@ -84,43 +77,43 @@ export class TestLambdaServer {
     const wsStart = new Promise((resolve, reject) => {
       this.wsServer = new WSServer({ port: this.port });
 
-      this.wsServer.on('connection', async (ws) => {
+      this.wsServer.on("connection", async ws => {
         const connectionId = ulid();
         const result = await this.handler(
           {
             requestContext: {
               connectionId,
-              routeKey: '$connect',
-              socket: ws,
-            },
+              routeKey: "$connect",
+              socket: ws
+            }
           } as any,
-          {} as any,
+          {} as any
         );
 
-        ws.on('close', () => {
+        ws.on("close", () => {
           this.handler(
             {
               requestContext: {
                 connectionId,
-                routeKey: '$disconnect',
-                socket: ws,
-              },
+                routeKey: "$disconnect",
+                socket: ws
+              }
             } as any,
-            {} as any,
+            {} as any
           );
         });
 
-        ws.on('message', async (data) => {
+        ws.on("message", async data => {
           const defaultResult = await this.handler(
             {
               requestContext: {
                 connectionId,
-                routeKey: '$default',
-                socket: ws,
+                routeKey: "$default",
+                socket: ws
               },
-              body: data.toString('utf8'),
+              body: data.toString("utf8")
             } as any,
-            {} as any,
+            {} as any
           );
 
           if (defaultResult && defaultResult.body) {
@@ -148,14 +141,14 @@ export class TestLambdaServer {
         }
       });
 
-      this.wsServer.on('listening', () => {
+      this.wsServer.on("listening", () => {
         // start event processing
         this.eventProcessingInterval = setInterval(this.processEvents, 20);
-        this.wsServer!.removeListener('error', reject);
+        this.wsServer!.removeListener("error", reject);
         resolve();
       });
 
-      this.wsServer.on('error', reject);
+      this.wsServer.on("error", reject);
     });
 
     return wsStart;

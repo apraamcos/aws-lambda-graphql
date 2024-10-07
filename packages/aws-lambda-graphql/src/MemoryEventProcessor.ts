@@ -1,30 +1,25 @@
-import type { ExecutionResult } from 'graphql';
-import { getAsyncIterator, isAsyncIterable } from 'iterall';
-import { ArrayPubSub } from './ArrayPubSub';
-import { formatMessage } from './formatMessage';
-import { execute } from './execute';
-import type { ISubscriptionEvent, IEventProcessor } from './types';
-import { SERVER_EVENT_TYPES } from './protocol';
-import type { Server } from './Server';
+import type { ExecutionResult } from "graphql";
+import { getAsyncIterator, isAsyncIterable } from "iterall";
+import { ArrayPubSub } from "./ArrayPubSub";
+import { formatMessage } from "./formatMessage";
+import { execute } from "./execute";
+import type { ISubscriptionEvent, IEventProcessor } from "./types";
+import { SERVER_EVENT_TYPES } from "./protocol";
+import type { Server } from "./Server";
 
 // polyfill Symbol.asyncIterator
 if (Symbol.asyncIterator === undefined) {
-  (Symbol as any).asyncIterator = Symbol.for('asyncIterator');
+  (Symbol as any).asyncIterator = Symbol.for("asyncIterator");
 }
 
-export type EventProcessorFn = (
-  events: ISubscriptionEvent[],
-  lambdaContext?: any,
-) => Promise<void>;
+export type EventProcessorFn = (events: ISubscriptionEvent[], lambdaContext?: any) => Promise<void>;
 
 export class MemoryEventProcessor<TServer extends Server = Server>
-  implements IEventProcessor<TServer, EventProcessorFn> {
+  implements IEventProcessor<TServer, EventProcessorFn>
+{
   public createHandler(server: TServer): EventProcessorFn {
     return async function processEvents(events, lambdaContext = {}) {
-      const options = await server.createGraphQLServerOptions(
-        events as any,
-        lambdaContext,
-      );
+      const options = await server.createGraphQLServerOptions(events as any, lambdaContext);
       const { connectionManager, subscriptionManager } = options.$$internal;
 
       for (const event of events) {
@@ -37,9 +32,7 @@ export class MemoryEventProcessor<TServer extends Server = Server>
         //  - if the are no more subscriptions, process next event
         // make sure that you won't throw any errors otherwise dynamo will call
         // handler with same events again
-        for await (const subscribers of subscriptionManager.subscribersByEvent(
-          event,
-        )) {
+        for await (const subscribers of subscriptionManager.subscribersByEvent(event)) {
           const promises = subscribers
             .map(async subscriber => {
               // create PubSub for this subscriber
@@ -49,14 +42,13 @@ export class MemoryEventProcessor<TServer extends Server = Server>
               const iterable = await execute({
                 connectionManager,
                 subscriptionManager,
-                schema: options.schema,
+                schema: options.schema!,
                 event: {} as any, // we don't have api gateway event here
                 lambdaContext: lambdaContext as any, // we don't have a lambda's context here
-                context: options.context,
                 connection: subscriber.connection,
                 operation: subscriber.operation,
                 pubSub,
-                registerSubscriptions: false,
+                registerSubscriptions: false
               });
 
               if (!isAsyncIterable(iterable)) {
@@ -73,8 +65,8 @@ export class MemoryEventProcessor<TServer extends Server = Server>
                   formatMessage({
                     id: subscriber.operationId,
                     payload: result.value,
-                    type: SERVER_EVENT_TYPES.GQL_DATA,
-                  }),
+                    type: SERVER_EVENT_TYPES.GQL_DATA
+                  })
                 );
               }
 

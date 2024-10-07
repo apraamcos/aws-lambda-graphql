@@ -1,11 +1,12 @@
-import type { APIGatewayEvent, Context as LambdaContext } from 'aws-lambda';
-import type {ASTVisitor,
+import type { APIGatewayEvent, Context as LambdaContext } from "aws-lambda";
+import type {
+  ASTVisitor,
   DocumentNode,
   GraphQLSchema,
   ExecutionArgs,
-  SubscriptionArgs,
   ExecutionResult,
-  ValidationContext} from 'graphql';
+  ValidationContext
+} from "graphql";
 import {
   getOperationAST,
   execute as gqlExecute,
@@ -13,16 +14,16 @@ import {
   specifiedRules,
   subscribe as gqlSubscribe,
   validate
-} from 'graphql';
-import type { PubSubEngine } from 'graphql-subscriptions';
+} from "graphql";
+import type { PubSubEngine } from "graphql-subscriptions";
 import type {
   APIGatewayWebSocketEvent,
   IConnection,
   IContext,
   IConnectionManager,
   ISubscriptionManager,
-  OperationRequest,
-} from './types';
+  OperationRequest
+} from "./types";
 
 export interface ExecutionParams {
   query: DocumentNode;
@@ -37,7 +38,7 @@ export interface ExecuteOptions {
   connectionManager: IConnectionManager;
   context?: any;
   event: APIGatewayEvent | APIGatewayWebSocketEvent;
-  fieldResolver?: ExecutionArgs['fieldResolver'];
+  fieldResolver?: ExecutionArgs["fieldResolver"];
   lambdaContext?: LambdaContext;
   /**
    * Optional function to modify execute options for specific operations
@@ -45,7 +46,7 @@ export interface ExecuteOptions {
   onOperation?: (
     message: OperationRequest,
     params: ExecutionParams,
-    connection: IConnection,
+    connection: IConnection
   ) => Promise<ExecutionParams> | ExecutionParams;
   operation: OperationRequest;
   pubSub: PubSubEngine;
@@ -58,11 +59,11 @@ export interface ExecuteOptions {
    * default is false
    */
   registerSubscriptions?: boolean;
-  rootValue?: ExecutionArgs['rootValue'];
+  rootValue?: ExecutionArgs["rootValue"];
   schema: GraphQLSchema;
-  subscribeFieldResolver?: SubscriptionArgs['subscribeFieldResolver'];
+  subscribeFieldResolver?: ExecutionArgs["subscribeFieldResolver"];
   subscriptionManager: ISubscriptionManager;
-  typeResolver?: ExecutionArgs['typeResolver'];
+  typeResolver?: ExecutionArgs["typeResolver"];
   /**
    * An optional array of validation rules that will be applied on the document
    * in additional to those defined by the GraphQL spec.
@@ -91,13 +92,11 @@ export async function execute({
   subscriptionManager,
   registerSubscriptions = false,
   typeResolver,
-  validationRules = [],
+  validationRules = []
 }: ExecuteOptions): Promise<ExecutionResult | AsyncIterator<ExecutionResult>> {
   // extract query from operation (parse if is string);
   const document: DocumentNode =
-    typeof operation.query !== 'string'
-      ? operation.query
-      : parse(operation.query);
+    typeof operation.query !== "string" ? operation.query : parse(operation.query);
 
   // this is internal context that should not be used by a user in resolvers
   // this is only added to provide access for PubSub to get connection managers and other
@@ -111,8 +110,8 @@ export async function execute({
       operation,
       pubSub,
       registerSubscriptions,
-      subscriptionManager,
-    },
+      subscriptionManager
+    }
   };
 
   // context stored in connection state
@@ -120,10 +119,10 @@ export async function execute({
 
   // instantiate context
   const contextValue: { [key: string]: any } =
-    typeof context === 'function'
+    typeof context === "function"
       ? await context({
           ...internalContext,
-          ...connectionContext,
+          ...connectionContext
         })
       : context;
 
@@ -134,39 +133,34 @@ export async function execute({
     context: {
       ...connectionContext,
       ...contextValue,
-      ...internalContext,
+      ...internalContext
     },
     operationName: operation.operationName,
     query: document,
     schema,
-    variables: operation.variables,
+    variables: operation.variables
   };
   let promisedParams = Promise.resolve(baseParams);
 
   if (onOperation) {
-    promisedParams = Promise.resolve(
-      onOperation(operation, baseParams, connection),
-    );
+    promisedParams = Promise.resolve(onOperation(operation, baseParams, connection));
   }
 
   const params = await promisedParams;
 
-  if (!params || typeof params !== 'object') {
-    throw new Error('`onOperation()` must return an object.');
+  if (!params || typeof params !== "object") {
+    throw new Error("`onOperation()` must return an object.");
   }
   if (!params.schema) {
-    throw new Error('Missing schema parameter!');
+    throw new Error("Missing schema parameter!");
   }
 
   // validate document
-  const validationErrors = validate(schema, document, [
-    ...specifiedRules,
-    ...validationRules,
-  ]);
+  const validationErrors = validate(schema, document, [...specifiedRules, ...validationRules]);
 
   if (validationErrors.length > 0) {
     return {
-      errors: validationErrors,
+      errors: validationErrors
     };
   }
 
@@ -175,11 +169,11 @@ export async function execute({
     ...internalContext,
     $$internal: {
       ...params.context.$$internal,
-      ...internalContext.$$internal,
-    },
+      ...internalContext.$$internal
+    }
   };
 
-  if (operationAST!.operation === 'subscription') {
+  if (operationAST!.operation === "subscription") {
     return gqlSubscribe({
       contextValue: processedContext,
       document,
@@ -187,7 +181,7 @@ export async function execute({
       operationName: params.operationName,
       rootValue,
       schema: params.schema || schema,
-      variableValues: params.variables,
+      variableValues: params.variables
     });
   }
 
@@ -199,6 +193,6 @@ export async function execute({
     rootValue,
     schema: params.schema || schema,
     typeResolver,
-    variableValues: params.variables,
+    variableValues: params.variables
   });
 }
