@@ -6,6 +6,7 @@
     "moduleResolution": "Bundler",
     "lib": ["ESNext"],
     "strict": true,
+    "noEmit": true,
     "noImplicitAny": false,
     "useDefineForClassFields": false,
     "useUnknownInCatchVariables": false,
