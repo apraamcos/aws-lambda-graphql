@@ -197,7 +197,7 @@ export class DynamoDBRangeSubscriptionManager implements ISubscriptionManager {
                 subscriptionId,
                 operationId: operation.operationId,
                 ...ttlField
-              } // 这里保持原样
+              }
             }
           })),
           [this.subscriptionOperationsTableName]: names.map(name => ({

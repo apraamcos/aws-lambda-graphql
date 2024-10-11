@@ -213,7 +213,7 @@ export class DynamoDBSubscriptionManager implements ISubscriptionManager {
                   subscriptionId,
                   operationId: operation.operationId,
                   ...ttlField
-                } // 不需要强制类型转换
+                }
               }
             }
           ],
