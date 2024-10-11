@@ -20,8 +20,7 @@ import {
 import {
   ApiGatewayManagementApiClient,
   DeleteConnectionCommand,
-  PostToConnectionCommand,
-  type ApiGatewayManagementApi
+  PostToConnectionCommand
 } from "@aws-sdk/client-apigatewaymanagementapi";
 
 const DEFAULT_TTL = 7200;
@@ -39,7 +38,7 @@ interface DynamoDBConnectionManagerOptions {
    *
    * If not provided it will be created with endpoint from connections
    */
-  apiGatewayManager?: ApiGatewayManagementApi;
+  apiGatewayManager?: ApiGatewayManagementApiClient;
   /**
    * Connections table name (default is Connections)
    */

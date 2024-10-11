@@ -18,7 +18,7 @@
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.669.0",
     "@aws-sdk/lib-dynamodb": "^3.669.0",
-    "@aws-sdk/util-dynamodb": "3.669.0",
+    "@aws-sdk/util-dynamodb": "^3.669.0",
     "@apollo/server": "^4.11.0",
     "@types/aws-lambda": "^8.10.145",
     "iterall": "^1.3.0",
