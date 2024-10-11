@@ -255,6 +255,14 @@ export class DynamoDBConnectionManager implements IConnectionManager {
       return this.apiGatewayManager;
     }
 
+    console.info("endpoint", endpoint);
+
+    if (!/^wss?:\/\//i.test(endpoint)) {
+      endpoint = `wss://${endpoint}`;
+    }
+
+    console.info("endpoint1", endpoint1);
+
     this.apiGatewayManager = new ApiGatewayManagementApiClient({ endpoint });
 
     return this.apiGatewayManager;
