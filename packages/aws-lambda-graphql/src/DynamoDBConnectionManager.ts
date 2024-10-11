@@ -212,6 +212,7 @@ export class DynamoDBConnectionManager implements IConnectionManager {
         })
       );
     } catch (e) {
+      console.error(JSON.stringify(e));
       // this is stale connection
       // remove it from DB
       if (e && e.statusCode === 410) {
@@ -259,8 +260,8 @@ export class DynamoDBConnectionManager implements IConnectionManager {
 
     console.info("endpoint", endpoint);
 
-    if (!/^wss?:\/\//i.test(endpoint)) {
-      endpoint = `wss://${endpoint}`;
+    if (!/^https?:\/\//i.test(endpoint)) {
+      endpoint = `https://${endpoint}`;
     }
 
     console.info("endpoint1", endpoint);
