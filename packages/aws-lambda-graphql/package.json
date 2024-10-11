@@ -34,7 +34,7 @@
     "rollup": "4.24.0",
     "rollup-plugin-dts": "6.1.1",
     "rollup-plugin-shell": "1.0.9",
-    "rollup-plugin-swc3": "0.12.0",
+    "rollup-plugin-swc3": "0.12.1",
     "graphql-tag": "^2.12.6",
     "graphql-tools": "^9.0.1",
     "mock-socket": "^8.0.5",

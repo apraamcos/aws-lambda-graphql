@@ -196,6 +196,7 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
       subscriptionManager: this.subscriptionManager
     };
 
+    console.info("$$internal", $$internal);
     const gqlContext = {
       event,
       lambdaContext: context,

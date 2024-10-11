@@ -1,5 +1,5 @@
-import assert from 'assert';
-import type { IEventStore, OperationRequest, SubcribeResolveFn } from './types';
+import assert from "assert";
+import type { IEventStore, OperationRequest, SubcribeResolveFn } from "./types";
 
 interface PubSubOptions {
   /**
@@ -23,59 +23,53 @@ export class PubSub {
 
   private debug: boolean;
 
-  constructor({
-    eventStore,
-    serializeEventPayload = true,
-    debug = false,
-  }: PubSubOptions) {
+  constructor({ eventStore, serializeEventPayload = true, debug = false }: PubSubOptions) {
     assert.ok(
-      eventStore && typeof eventStore === 'object',
-      'Please provide eventStore as an instance implementing IEventStore',
+      eventStore && typeof eventStore === "object",
+      "Please provide eventStore as an instance implementing IEventStore"
     );
     assert.ok(
-      typeof serializeEventPayload === 'boolean',
-      'Please provide serializeEventPayload as a boolean',
+      typeof serializeEventPayload === "boolean",
+      "Please provide serializeEventPayload as a boolean"
     );
-    assert.ok(typeof debug === 'boolean', 'Please provide debug as a boolean');
+    assert.ok(typeof debug === "boolean", "Please provide debug as a boolean");
     this.eventStore = eventStore;
     this.serializeEventPayload = serializeEventPayload;
     this.debug = debug;
   }
 
   subscribe = (eventNames: string | string[]): SubcribeResolveFn => {
-    return async (rootValue, args, { $$internal }) => {
-      const {
-        connection,
-        operation,
-        pubSub,
-        registerSubscriptions,
-        subscriptionManager,
-      } = $$internal;
+    return async (rootValue, args, context) => {
+      console.info("rootValue", rootValue);
+      console.info("args", args);
+      console.info("context", context);
+      const { connection, operation, pubSub, registerSubscriptions, subscriptionManager } =
+        context.$$internal;
       const names = Array.isArray(eventNames) ? eventNames : [eventNames];
 
       if (pubSub == null) {
-        throw new Error('`pubSub` is not provided in context');
+        throw new Error("`pubSub` is not provided in context");
       }
 
       // register subscriptions only if it set to do so
       // basically this means that client sent subscription operation over websocket
       if (registerSubscriptions) {
         if (connection == null) {
-          throw new Error('`connection` is not provided in context');
+          throw new Error("`connection` is not provided in context");
         }
 
         await subscriptionManager.subscribe(
           names,
           connection,
           // this is called only on subscription so operationId should be filled
-          operation as OperationRequest & { operationId: string },
+          operation as OperationRequest & { operationId: string }
         );
-        if (this.debug)
-          {console.log('Create subscription', names, connection, operation);}
+        if (this.debug) {
+          console.log("Create subscription", names, connection, operation);
+        }
       }
 
-      return pubSub.asyncIterator(names) as AsyncIterable<any> &
-        AsyncIterator<any>;
+      return pubSub.asyncIterator(names) as AsyncIterable<any> & AsyncIterator<any>;
     };
   };
 
@@ -84,13 +78,13 @@ export class PubSub {
    * So you should not expect to fire in same process
    */
   publish = async (eventName: string, payload: any) => {
-    if (typeof eventName !== 'string' || eventName === '') {
-      throw new Error('Event name must be nonempty string');
+    if (typeof eventName !== "string" || eventName === "") {
+      throw new Error("Event name must be nonempty string");
     }
 
     await this.eventStore.publish({
       payload: this.serializeEventPayload ? JSON.stringify(payload) : payload,
-      event: eventName,
+      event: eventName
     });
   };
 }
