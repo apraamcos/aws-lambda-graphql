@@ -164,6 +164,9 @@ export async function execute({
     };
   }
 
+  console.info("params.context", params.context);
+  console.info("internalContext", internalContext);
+
   const processedContext = {
     ...params.context,
     ...internalContext,

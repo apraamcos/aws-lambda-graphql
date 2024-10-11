@@ -20,6 +20,7 @@ export class MemoryEventProcessor<TServer extends Server = Server>
   public createHandler(server: TServer): EventProcessorFn {
     return async function processEvents(events, lambdaContext = {}) {
       const options = await server.createGraphQLServerOptions(events as any, lambdaContext);
+      console.info("options", options);
       const { connectionManager, subscriptionManager } = options.$$internal;
 
       for (const event of events) {
