@@ -203,8 +203,6 @@ export class DynamoDBConnectionManager implements IConnectionManager {
     payload: string | Buffer
   ): Promise<void> => {
     try {
-      console.info("sendToConnection", JSON.stringify(payload));
-      console.info("connection.id", connection.id);
       await this.createApiGatewayManager(connection.data.endpoint).send(
         new PostToConnectionCommand({
           ConnectionId: connection.id,
@@ -258,13 +256,9 @@ export class DynamoDBConnectionManager implements IConnectionManager {
       return this.apiGatewayManager;
     }
 
-    console.info("endpoint", endpoint);
-
     if (!/^https?:\/\//i.test(endpoint)) {
       endpoint = `https://${endpoint}`;
     }
-
-    console.info("endpoint1", endpoint);
 
     this.apiGatewayManager = new ApiGatewayManagementApiClient({ endpoint });
 

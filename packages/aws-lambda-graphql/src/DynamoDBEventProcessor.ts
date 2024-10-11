@@ -56,14 +56,10 @@ export class DynamoDBEventProcessor<TServer extends Server = Server>
           continue;
         }
 
-        console.info("record.dynamodb!.NewImage", record.dynamodb!.NewImage);
-
         // now construct event from dynamodb image
         const event: IDynamoDBSubscriptionEvent = unmarshall(record.dynamodb!.NewImage as any, {
           convertWithoutMapWrapper: false
         }) as any;
-
-        console.info("event", event);
 
         // skip if event is expired
         if (isTTLExpired(event.ttl)) {
