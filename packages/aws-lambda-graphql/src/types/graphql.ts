@@ -1,10 +1,10 @@
-import type { APIGatewayEvent, Context as LambdaContext } from 'aws-lambda';
-import type { GraphQLResolveInfo } from 'graphql';
-import type { PubSubEngine } from 'graphql-subscriptions';
-import type { APIGatewayWebSocketEvent } from './aws';
-import type { IConnection, IConnectionManager } from './connections';
-import type { ISubscriptionManager } from './subscriptions';
-import type { OperationRequest } from './operations';
+import type { APIGatewayEvent, Context as LambdaContext } from "aws-lambda";
+import type { GraphQLResolveInfo } from "graphql";
+import type { PubSubEngine } from "graphql-subscriptions";
+import type { APIGatewayWebSocketEvent } from "./aws";
+import type { IConnection, IConnectionManager } from "./connections";
+import type { ISubscriptionManager } from "./subscriptions";
+import type { OperationRequest } from "./operations";
 
 /**
  * Superset of context passed to every operation invoked by websocket
@@ -59,9 +59,9 @@ export interface IContext {
   [key: string]: any;
 }
 
-export type SubcribeResolveFn = (
+export type SubscribeResolveFn = (
   rootValue: any,
   args: any,
   context: IContext,
-  info?: GraphQLResolveInfo,
+  info?: GraphQLResolveInfo
 ) => Promise<AsyncIterator<any> & AsyncIterable<any>>;

@@ -1,5 +1,5 @@
 import assert from "assert";
-import type { IEventStore, OperationRequest, SubcribeResolveFn } from "./types";
+import type { IEventStore, OperationRequest, SubscribeResolveFn } from "./types";
 
 interface PubSubOptions {
   /**
@@ -38,7 +38,7 @@ export class PubSub {
     this.debug = debug;
   }
 
-  subscribe = (eventNames: string | string[]): SubcribeResolveFn => {
+  subscribe = (eventNames: string | string[]): SubscribeResolveFn => {
     return async (rootValue, args, context) => {
       console.info("rootValue", rootValue);
       console.info("args", args);

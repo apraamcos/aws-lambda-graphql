@@ -1,19 +1,20 @@
-import type { GraphQLResolveInfo } from 'graphql';
-import { $$asyncIterator } from 'iterall';
-import type { IContext, SubcribeResolveFn } from './types';
+import type { GraphQLResolveInfo } from "graphql";
+import { $$asyncIterator } from "iterall";
+import type { IContext, SubscribeResolveFn } from "./types";
+import type { SubscriptionSubscribeFunc } from "node_modules/type-graphql/build/typings/decorators/types";
 
 export type FilterFn = (
   rootValue?: any,
   args?: any,
   context?: IContext,
-  info?: GraphQLResolveInfo,
+  info?: GraphQLResolveInfo
 ) => boolean | Promise<boolean>;
 
 function withFilter(
-  asyncIteratorFn: SubcribeResolveFn,
-  filterFn: FilterFn,
-): SubcribeResolveFn {
-  return async (rootValue: any, args: any, context: any, info: any) => {
+  asyncIteratorFn: SubscribeResolveFn,
+  filterFn: FilterFn
+): SubscriptionSubscribeFunc {
+  return async ({ source: rootValue, args, context, info }) => {
     const asyncIterator = await asyncIteratorFn(rootValue, args, context, info);
 
     const getNextPromise = (): Promise<any> => {
@@ -22,9 +23,7 @@ function withFilter(
           return payload;
         }
 
-        return Promise.resolve(
-          filterFn(payload.value, args, context, info),
-        ).then(filterResult => {
+        return Promise.resolve(filterFn(payload.value, args, context, info)).then(filterResult => {
           if (filterResult === true) {
             return payload;
           }
@@ -47,7 +46,7 @@ function withFilter(
       },
       [$$asyncIterator]() {
         return this;
-      },
+      }
     } as any;
   };
 }
