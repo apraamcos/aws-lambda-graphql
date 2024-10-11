@@ -1,12 +1,12 @@
-import { DynamoDB as BaseDynamoDB } from 'aws-sdk';
+import { DynamoDB as BaseDynamoDB } from "aws-sdk";
 
 const postToConnectionPromiseMock = jest.fn();
 const postToConnectionMock = jest.fn(() => ({
-  promise: postToConnectionPromiseMock,
+  promise: postToConnectionPromiseMock
 }));
 const deleteConnectionPromiseMock = jest.fn();
 const deleteConnectionMock = jest.fn(() => ({
-  promise: deleteConnectionPromiseMock,
+  promise: deleteConnectionPromiseMock
 }));
 
 class ApiGatewayManagementApi {
@@ -29,7 +29,7 @@ const queryPromiseMock = jest.fn();
 const queryMock = jest.fn(() => ({ promise: queryPromiseMock }));
 const transactWritePromiseMock = jest.fn();
 const transactWriteMock = jest.fn(() => ({
-  promise: transactWritePromiseMock,
+  promise: transactWritePromiseMock
 }));
 
 class DocumentClient {
@@ -70,5 +70,5 @@ export {
   queryMock,
   queryPromiseMock,
   transactWriteMock,
-  transactWritePromiseMock,
+  transactWritePromiseMock
 };

@@ -1,19 +1,26 @@
-import assert from 'assert';
-import { DynamoDB } from 'aws-sdk';
+import assert from "assert";
 import type {
   IConnection,
   ISubscriber,
   ISubscriptionManager,
   IdentifiedOperationRequest,
-  ISubscriptionEvent,
-} from './types';
-import { computeTTL } from './helpers';
+  ISubscriptionEvent
+} from "./types";
+import { computeTTL } from "./helpers";
+import {
+  BatchWriteCommand,
+  GetCommand,
+  QueryCommand,
+  ScanCommand,
+  TransactWriteCommand,
+  type DynamoDBDocumentClient
+} from "@aws-sdk/lib-dynamodb";
 
 const DEFAULT_TTL = 7200;
 
 // polyfill Symbol.asyncIterator
 if (Symbol.asyncIterator === undefined) {
-  (Symbol as any).asyncIterator = Symbol.for('asyncIterator');
+  (Symbol as any).asyncIterator = Symbol.for("asyncIterator");
 }
 
 interface DynamoDBSubscriber extends ISubscriber {
@@ -32,7 +39,7 @@ interface DynamoDBSubscriptionManagerOptions {
   /**
    * Use this to override default document client (for example if you want to use local dynamodb)
    */
-  dynamoDbClient?: DynamoDB.DocumentClient;
+  dynamoDbClient: DynamoDBDocumentClient;
   /**
    * Subscriptions table name (default is Subscriptions)
    */
@@ -64,10 +71,7 @@ interface DynamoDBSubscriptionManagerOptions {
    *
    * Useful for multi-tenancy
    */
-  getSubscriptionNameFromConnection?: (
-    name: string,
-    connection: IConnection,
-  ) => string;
+  getSubscriptionNameFromConnection?: (name: string, connection: IConnection) => string;
 }
 
 /**
@@ -89,54 +93,51 @@ export class DynamoDBSubscriptionManager implements ISubscriptionManager {
 
   private subscriptionOperationsTableName: string;
 
-  private db: DynamoDB.DocumentClient;
+  private db: DynamoDBDocumentClient;
 
   private ttl: number | false;
 
   private getSubscriptionNameFromEvent: (event: ISubscriptionEvent) => string;
 
-  private getSubscriptionNameFromConnection: (
-    name: string,
-    connection: IConnection,
-  ) => string;
+  private getSubscriptionNameFromConnection: (name: string, connection: IConnection) => string;
 
   constructor({
     dynamoDbClient,
-    subscriptionsTableName = 'Subscriptions',
-    subscriptionOperationsTableName = 'SubscriptionOperations',
+    subscriptionsTableName = "Subscriptions",
+    subscriptionOperationsTableName = "SubscriptionOperations",
     ttl = DEFAULT_TTL,
     getSubscriptionNameFromEvent = event => event.event,
-    getSubscriptionNameFromConnection = name => name,
-  }: DynamoDBSubscriptionManagerOptions = {}) {
+    getSubscriptionNameFromConnection = name => name
+  }: DynamoDBSubscriptionManagerOptions) {
     assert.ok(
-      typeof subscriptionOperationsTableName === 'string',
-      'Please provide subscriptionOperationsTableName as a string',
+      typeof subscriptionOperationsTableName === "string",
+      "Please provide subscriptionOperationsTableName as a string"
     );
     assert.ok(
-      typeof subscriptionsTableName === 'string',
-      'Please provide subscriptionsTableName as a string',
+      typeof subscriptionsTableName === "string",
+      "Please provide subscriptionsTableName as a string"
     );
     assert.ok(
-      ttl === false || (typeof ttl === 'number' && ttl > 0),
-      'Please provide ttl as a number greater than 0 or false to turn it off',
+      ttl === false || (typeof ttl === "number" && ttl > 0),
+      "Please provide ttl as a number greater than 0 or false to turn it off"
     );
     assert.ok(
-      dynamoDbClient == null || typeof dynamoDbClient === 'object',
-      'Please provide dynamoDbClient as an instance of DynamoDB.DocumentClient',
+      dynamoDbClient == null || typeof dynamoDbClient === "object",
+      "Please provide dynamoDbClient as an instance of DynamoDB.DocumentClient"
     );
 
     this.subscriptionsTableName = subscriptionsTableName;
     this.subscriptionOperationsTableName = subscriptionOperationsTableName;
-    this.db = dynamoDbClient || new DynamoDB.DocumentClient();
+    this.db = dynamoDbClient;
     this.ttl = ttl;
     this.getSubscriptionNameFromEvent = getSubscriptionNameFromEvent;
     this.getSubscriptionNameFromConnection = getSubscriptionNameFromConnection;
   }
 
   subscribersByEvent = (
-    event: ISubscriptionEvent,
+    event: ISubscriptionEvent
   ): AsyncIterable<ISubscriber[]> & AsyncIterator<ISubscriber[]> => {
-    let ExclusiveStartKey: DynamoDB.DocumentClient.Key | undefined;
+    let ExclusiveStartKey: Record<string, any> | undefined;
     let done = false;
 
     const name = this.getSubscriptionNameFromEvent(event);
@@ -148,22 +149,22 @@ export class DynamoDBSubscriptionManager implements ISubscriptionManager {
         }
 
         const time = Math.round(Date.now() / 1000);
-        const result = await this.db
-          .query({
+        const result = await this.db.send(
+          new QueryCommand({
             ExclusiveStartKey,
             TableName: this.subscriptionsTableName,
             Limit: 50,
-            KeyConditionExpression: 'event = :event',
-            FilterExpression: '#ttl > :time OR attribute_not_exists(#ttl)',
+            KeyConditionExpression: "event = :event",
+            FilterExpression: "#ttl > :time OR attribute_not_exists(#ttl)",
             ExpressionAttributeValues: {
-              ':event': name,
-              ':time': time,
+              ":event": name,
+              ":time": time
             },
             ExpressionAttributeNames: {
-              '#ttl': 'ttl',
-            },
+              "#ttl": "ttl"
+            }
           })
-          .promise();
+        );
 
         ExclusiveStartKey = result.LastEvaluatedKey;
 
@@ -179,34 +180,28 @@ export class DynamoDBSubscriptionManager implements ISubscriptionManager {
       },
       [Symbol.asyncIterator]() {
         return this;
-      },
+      }
     };
   };
 
   subscribe = async (
     names: string[],
     connection: IConnection,
-    operation: IdentifiedOperationRequest,
+    operation: IdentifiedOperationRequest
   ): Promise<void> => {
-    const subscriptionId = this.generateSubscriptionId(
-      connection.id,
-      operation.operationId,
-    );
+    const subscriptionId = this.generateSubscriptionId(connection.id, operation.operationId);
 
     // we can only subscribe to one subscription in GQL document
     if (names.length !== 1) {
-      throw new Error('Only one active operation per event name is allowed');
+      throw new Error("Only one active operation per event name is allowed");
     }
     let [name] = names;
     name = this.getSubscriptionNameFromConnection(name, connection);
 
-    const ttlField =
-      this.ttl === false || this.ttl == null
-        ? {}
-        : { ttl: computeTTL(this.ttl) };
+    const ttlField = this.ttl === false || this.ttl == null ? {} : { ttl: computeTTL(this.ttl) };
 
-    await this.db
-      .batchWrite({
+    await this.db.send(
+      new BatchWriteCommand({
         RequestItems: {
           [this.subscriptionsTableName]: [
             {
@@ -217,10 +212,10 @@ export class DynamoDBSubscriptionManager implements ISubscriptionManager {
                   event: name,
                   subscriptionId,
                   operationId: operation.operationId,
-                  ...ttlField,
-                } as DynamoDBSubscriber,
-              },
-            },
+                  ...ttlField
+                } // 不需要强制类型转换
+              }
+            }
           ],
           [this.subscriptionOperationsTableName]: [
             {
@@ -228,137 +223,131 @@ export class DynamoDBSubscriptionManager implements ISubscriptionManager {
                 Item: {
                   subscriptionId,
                   event: name,
-                  ...ttlField,
-                },
-              },
-            },
-          ],
-        },
+                  ...ttlField
+                }
+              }
+            }
+          ]
+        }
       })
-      .promise();
+    );
   };
 
   unsubscribe = async (subscriber: ISubscriber) => {
     const subscriptionId = this.generateSubscriptionId(
       subscriber.connection.id,
-      subscriber.operationId,
+      subscriber.operationId
     );
 
-    await this.db
-      .transactWrite({
+    await this.db.send(
+      new TransactWriteCommand({
         TransactItems: [
           {
             Delete: {
               TableName: this.subscriptionsTableName,
               Key: {
                 event: subscriber.event,
-                subscriptionId,
-              },
-            },
+                subscriptionId
+              }
+            }
           },
           {
             Delete: {
               TableName: this.subscriptionOperationsTableName,
               Key: {
-                subscriptionId,
-              },
-            },
-          },
-        ],
+                subscriptionId
+              }
+            }
+          }
+        ]
       })
-      .promise();
+    );
   };
 
   unsubscribeOperation = async (connectionId: string, operationId: string) => {
-    const operation = await this.db
-      .get({
+    const operation = await this.db.send(
+      new GetCommand({
         TableName: this.subscriptionOperationsTableName,
         Key: {
-          subscriptionId: this.generateSubscriptionId(
-            connectionId,
-            operationId,
-          ),
-        },
+          subscriptionId: this.generateSubscriptionId(connectionId, operationId)
+        }
       })
-      .promise();
+    );
 
     if (operation.Item) {
-      await this.db
-        .transactWrite({
+      await this.db.send(
+        new TransactWriteCommand({
           TransactItems: [
             {
               Delete: {
                 TableName: this.subscriptionsTableName,
                 Key: {
                   event: operation.Item.event,
-                  subscriptionId: operation.Item.subscriptionId,
-                },
-              },
+                  subscriptionId: operation.Item.subscriptionId
+                }
+              }
             },
             {
               Delete: {
                 TableName: this.subscriptionOperationsTableName,
                 Key: {
-                  subscriptionId: operation.Item.subscriptionId,
-                },
-              },
-            },
-          ],
+                  subscriptionId: operation.Item.subscriptionId
+                }
+              }
+            }
+          ]
         })
-        .promise();
+      );
     }
   };
 
   unsubscribeAllByConnectionId = async (connectionId: string) => {
-    let cursor: DynamoDB.DocumentClient.Key | undefined;
+    let cursor: { [key: string]: any } | undefined;
 
     do {
-      const { Items, LastEvaluatedKey } = await this.db
-        .scan({
+      const { Items, LastEvaluatedKey } = await this.db.send(
+        new ScanCommand({
           TableName: this.subscriptionsTableName,
           ExclusiveStartKey: cursor,
-          FilterExpression: 'begins_with(subscriptionId, :connection_id)',
+          FilterExpression: "begins_with(subscriptionId, :connection_id)",
           ExpressionAttributeValues: {
-            ':connection_id': connectionId,
+            ":connection_id": connectionId
           },
-          Limit: 12, // Maximum of 25 request items sent to DynamoDB a time
+          Limit: 12 // Maximum of 25 request items sent to DynamoDB a time
         })
-        .promise();
+      );
 
       if (Items == null || (LastEvaluatedKey == null && Items.length === 0)) {
         return;
       }
 
       if (Items.length > 0) {
-        await this.db
-          .batchWrite({
+        await this.db.send(
+          new BatchWriteCommand({
             RequestItems: {
               [this.subscriptionsTableName]: Items.map(item => ({
                 DeleteRequest: {
                   Key: {
                     event: item.event,
-                    subscriptionId: item.subscriptionId,
-                  },
-                },
+                    subscriptionId: item.subscriptionId
+                  }
+                }
               })),
               [this.subscriptionOperationsTableName]: Items.map(item => ({
                 DeleteRequest: {
-                  Key: { subscriptionId: item.subscriptionId },
-                },
-              })),
-            },
+                  Key: { subscriptionId: item.subscriptionId }
+                }
+              }))
+            }
           })
-          .promise();
+        );
       }
 
       cursor = LastEvaluatedKey;
     } while (cursor);
   };
 
-  generateSubscriptionId = (
-    connectionId: string,
-    operationId: string,
-  ): string => {
+  generateSubscriptionId = (connectionId: string, operationId: string): string => {
     return `${connectionId}:${operationId}`;
   };
 }

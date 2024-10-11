@@ -1,8 +1,8 @@
 import assert from "assert";
-import { DynamoDB } from "aws-sdk";
 import { ulid } from "ulidx";
 import type { IEventStore, ISubscriptionEvent } from "./types";
 import { computeTTL } from "./helpers";
+import { PutCommand, type DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 export interface IDynamoDBSubscriptionEvent extends ISubscriptionEvent {
   /**
@@ -17,7 +17,7 @@ interface DynamoDBEventStoreOptions {
   /**
    * Use this to override default document client (for example if you want to use local dynamodb)
    */
-  dynamoDbClient?: DynamoDB.DocumentClient;
+  dynamoDbClient: DynamoDBDocumentClient;
   /**
    * Events table name (default is Events)
    */
@@ -40,7 +40,7 @@ interface DynamoDBEventStoreOptions {
  * The server needs to expose DynamoDBEventProcessor handler in order to process these events
  */
 export class DynamoDBEventStore implements IEventStore {
-  private db: DynamoDB.DocumentClient;
+  private db: DynamoDBDocumentClient;
 
   private tableName: string;
 
@@ -50,7 +50,7 @@ export class DynamoDBEventStore implements IEventStore {
     dynamoDbClient,
     eventsTable = "Events",
     ttl = DEFAULT_TTL
-  }: DynamoDBEventStoreOptions = {}) {
+  }: DynamoDBEventStoreOptions) {
     assert.ok(
       ttl === false || (typeof ttl === "number" && ttl > 0),
       "Please provide ttl as a number greater than 0 or false to turn it off"
@@ -61,14 +61,14 @@ export class DynamoDBEventStore implements IEventStore {
     );
     assert.ok(typeof eventsTable === "string", "Please provide eventsTable as a string");
 
-    this.db = dynamoDbClient || new DynamoDB.DocumentClient();
+    this.db = dynamoDbClient;
     this.tableName = eventsTable;
     this.ttl = ttl;
   }
 
   publish = async (event: ISubscriptionEvent): Promise<void> => {
-    await this.db
-      .put({
+    await this.db.send(
+      new PutCommand({
         TableName: this.tableName,
         Item: {
           id: ulid(),
@@ -76,6 +76,6 @@ export class DynamoDBEventStore implements IEventStore {
           ...(this.ttl === false || this.ttl == null ? {} : { ttl: computeTTL(this.ttl) })
         }
       })
-      .promise();
+    );
   };
 }

@@ -11,3 +11,4 @@ launch.json
 snowflake.log
 cdk.context.json
 .swc
+tsconfig.tsbuildinfo

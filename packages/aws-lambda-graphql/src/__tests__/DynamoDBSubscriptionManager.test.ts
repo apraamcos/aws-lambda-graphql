@@ -1,24 +1,16 @@
-import {
-  // @ts-ignore
-  batchWriteMock,
-  // @ts-ignore
-  batchWritePromiseMock,
-  // @ts-ignore
-  deletePromiseMock,
-  // @ts-ignore
-  getPromiseMock,
-  // @ts-ignore
-  putPromiseMock,
-  // @ts-ignore
-  queryPromiseMock,
-  // @ts-ignore
-  transactWriteMock,
-  // @ts-ignore
-  transactWritePromiseMock,
-} from 'aws-sdk';
-import { DynamoDBSubscriptionManager } from '../DynamoDBSubscriptionManager';
+import { DynamoDBSubscriptionManager } from "../DynamoDBSubscriptionManager";
 
-describe('DynamoDBSubscriptionManager', () => {
+// Mocking the commands for tests
+export const batchWriteMock = jest.fn();
+export const batchWritePromiseMock = jest.fn();
+export const deletePromiseMock = jest.fn();
+export const getPromiseMock = jest.fn();
+export const putPromiseMock = jest.fn();
+export const queryPromiseMock = jest.fn();
+export const transactWriteMock = jest.fn();
+export const transactWritePromiseMock = jest.fn();
+
+describe("DynamoDBSubscriptionManager", () => {
   beforeEach(() => {
     batchWriteMock.mockClear();
     batchWritePromiseMock.mockReset();
@@ -29,8 +21,8 @@ describe('DynamoDBSubscriptionManager', () => {
     transactWritePromiseMock.mockReset();
   });
 
-  describe('subscribersByEvent', () => {
-    it('works correctly for emty query result', async () => {
+  describe("subscribersByEvent", () => {
+    it("works correctly for emty query result", async () => {
       const subscriptionManager = new DynamoDBSubscriptionManager();
 
       (queryPromiseMock as jest.Mock).mockResolvedValueOnce({ Items: [] });
@@ -39,8 +31,8 @@ describe('DynamoDBSubscriptionManager', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for await (const page of subscriptionManager.subscribersByEvent({
-        event: 'test',
-        payload: {},
+        event: "test",
+        payload: {}
       })) {
         pages++;
       }
@@ -49,20 +41,20 @@ describe('DynamoDBSubscriptionManager', () => {
       expect(queryPromiseMock).toHaveBeenCalledTimes(1);
     });
 
-    it('works correctly for non emty query result', async () => {
+    it("works correctly for non emty query result", async () => {
       const subscriptionManager = new DynamoDBSubscriptionManager();
 
       (queryPromiseMock as jest.Mock).mockResolvedValueOnce({
         Items: [{}],
-        LastEvaluatedKey: {},
+        LastEvaluatedKey: {}
       });
       (queryPromiseMock as jest.Mock).mockResolvedValueOnce({
         Items: [{}],
-        LastEvaluatedKey: {},
+        LastEvaluatedKey: {}
       });
       (queryPromiseMock as jest.Mock).mockResolvedValueOnce({
         Items: [{}],
-        LastEvaluatedKey: {},
+        LastEvaluatedKey: {}
       });
       (queryPromiseMock as jest.Mock).mockResolvedValueOnce({ Items: [] });
 
@@ -70,8 +62,8 @@ describe('DynamoDBSubscriptionManager', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for await (const page of subscriptionManager.subscribersByEvent({
-        event: 'test',
-        payload: {},
+        event: "test",
+        payload: {}
       })) {
         pages++;
       }
@@ -81,18 +73,14 @@ describe('DynamoDBSubscriptionManager', () => {
     });
   });
 
-  describe('subscribe', () => {
-    it('subscribes correctly', async () => {
+  describe("subscribe", () => {
+    it("subscribes correctly", async () => {
       const subscriptionManager = new DynamoDBSubscriptionManager();
 
       (batchWritePromiseMock as jest.Mock).mockResolvedValueOnce({});
 
       await expect(
-        subscriptionManager.subscribe(
-          ['name1'],
-          { id: '1' } as any,
-          { operationId: '1' } as any,
-        ),
+        subscriptionManager.subscribe(["name1"], { id: "1" } as any, { operationId: "1" } as any)
       ).resolves.toBeUndefined();
 
       expect(batchWritePromiseMock).toHaveBeenCalledTimes(1);
@@ -103,45 +91,41 @@ describe('DynamoDBSubscriptionManager', () => {
               {
                 PutRequest: {
                   Item: {
-                    event: 'name1',
-                    subscriptionId: '1:1',
-                    ttl: expect.any(Number),
-                  },
-                },
-              },
+                    event: "name1",
+                    subscriptionId: "1:1",
+                    ttl: expect.any(Number)
+                  }
+                }
+              }
             ],
             Subscriptions: [
               {
                 PutRequest: {
                   Item: {
-                    connection: { id: '1' },
-                    event: 'name1',
-                    operation: { operationId: '1' },
-                    operationId: '1',
-                    subscriptionId: '1:1',
-                    ttl: expect.any(Number),
-                  },
-                },
-              },
-            ],
-          },
-        }),
+                    connection: { id: "1" },
+                    event: "name1",
+                    operation: { operationId: "1" },
+                    operationId: "1",
+                    subscriptionId: "1:1",
+                    ttl: expect.any(Number)
+                  }
+                }
+              }
+            ]
+          }
+        })
       );
     });
 
-    it('supports turning off ttl', async () => {
+    it("supports turning off ttl", async () => {
       const subscriptionManager = new DynamoDBSubscriptionManager({
-        ttl: false,
+        ttl: false
       });
 
       (batchWritePromiseMock as jest.Mock).mockResolvedValueOnce({});
 
       await expect(
-        subscriptionManager.subscribe(
-          ['name1'],
-          { id: '1' } as any,
-          { operationId: '1' } as any,
-        ),
+        subscriptionManager.subscribe(["name1"], { id: "1" } as any, { operationId: "1" } as any)
       ).resolves.toBeUndefined();
 
       expect(batchWritePromiseMock).toHaveBeenCalledTimes(1);
@@ -152,44 +136,43 @@ describe('DynamoDBSubscriptionManager', () => {
               {
                 PutRequest: {
                   Item: {
-                    ttl: expect.any(Number),
-                  },
-                },
-              },
+                    ttl: expect.any(Number)
+                  }
+                }
+              }
             ],
             Subscriptions: [
               {
                 PutRequest: {
                   Item: {
-                    ttl: expect.any(Number),
-                  },
-                },
-              },
-            ],
-          },
-        }),
+                    ttl: expect.any(Number)
+                  }
+                }
+              }
+            ]
+          }
+        })
       );
     });
   });
 
-  describe('unsubscribe', () => {
-    it('unsubscribes correctly', async () => {
+  describe("unsubscribe", () => {
+    it("unsubscribes correctly", async () => {
       const subscriptionManager = new DynamoDBSubscriptionManager();
 
       (transactWritePromiseMock as jest.Mock).mockResolvedValueOnce({});
 
       await expect(
         subscriptionManager.unsubscribe({
-          connection: { id: '1' } as any,
-          event: 'test',
+          connection: { id: "1" } as any,
+          event: "test",
           operation: {} as any,
-          operationId: '1',
-        }),
+          operationId: "1"
+        })
       ).resolves.toBeUndefined();
 
       expect(transactWritePromiseMock).toHaveBeenCalledTimes(1);
-      expect((transactWriteMock as jest.Mock).mock.calls[0][0])
-        .toMatchInlineSnapshot(`
+      expect((transactWriteMock as jest.Mock).mock.calls[0][0]).toMatchInlineSnapshot(`
         Object {
           "TransactItems": Array [
             Object {
