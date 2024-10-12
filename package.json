@@ -9,7 +9,7 @@
     "test:ci": "jest --ci --runInBand",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
-    "type-check": "tsc --noEmit",
+    "type-check": "npm run type-check -w @cj-tech-master/aws-lambda-graphql",
     "clean": "rimraf package-lock.json **/node_modules -g && npm i"
   },
   "workspaces": {
@@ -37,8 +37,5 @@
     "rimraf": "6.0.1",
     "typescript": "5.6.3",
     "typescript-eslint": "8.8.1"
-  },
-  "peerDependencies": {
-    "type-graphql": "2.0.0-rc.2"
   }
 }
