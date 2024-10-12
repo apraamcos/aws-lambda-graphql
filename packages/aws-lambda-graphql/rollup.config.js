@@ -39,10 +39,7 @@ const type = ({ entryName }) =>
       }
     ],
     external: ["stream"],
-    plugins: [
-      dts({ tsconfig: "./tsconfig.json" })
-      // execute({ commands: ["sh scripts/build.sh"], hook: "closeBundle" })
-    ]
+    plugins: [dts({ tsconfig: "./tsconfig.json" })]
   });
 
 const configs = [entry({ entryName: "index" }), type({ entryName: "index" })];
