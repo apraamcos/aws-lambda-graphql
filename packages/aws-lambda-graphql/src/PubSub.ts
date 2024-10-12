@@ -40,9 +40,6 @@ export class PubSub {
 
   subscribe = (eventNames: string | string[]): SubscribeResolveFn => {
     return async (rootValue, args, context) => {
-      console.info("rootValue", rootValue);
-      console.info("args", args);
-      console.info("context", context);
       const { connection, operation, pubSub, registerSubscriptions, subscriptionManager } =
         context.$$internal;
       const names = Array.isArray(eventNames) ? eventNames : [eventNames];
