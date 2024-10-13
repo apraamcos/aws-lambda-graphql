@@ -11,7 +11,7 @@ export const getRedisClient = async (host: string) => {
     redisKey,
     async () =>
       new Redis({
-        connectTimeout: 10000,
+        connectTimeout: 300000,
         retryStrategy(times) {
           return Math.min(times * 100, 3000);
         },
