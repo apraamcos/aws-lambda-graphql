@@ -121,18 +121,25 @@ export class RedisConnectionManager implements IConnectionManager {
 
   sendToConnection = async (connection: IConnection, payload: string | Buffer): Promise<void> => {
     try {
-      await this.createApiGatewayManager(connection.data.endpoint).send(
+      const res = await this.createApiGatewayManager(connection.data.endpoint).send(
         new PostToConnectionCommand({
           ConnectionId: connection.id,
           Data: payload
         })
       );
+      console.log(JSON.stringify(res));
+      if (res.$metadata.httpStatusCode === 410) {
+        console.info("In here 1!");
+        await this.unregisterConnection(connection);
+      }
     } catch (e) {
       // this is stale connection
       // remove it from store
-      if (e && e.statusCode === 410) {
+      if (e && e.httpStatusCode === 410) {
+        console.info("In here 2!");
         await this.unregisterConnection(connection);
       } else {
+        console.info(3, JSON.stringify(e));
         throw e;
       }
     }
