@@ -1,25 +1,25 @@
-import assert from 'assert';
-import type { Redis } from 'ioredis';
+import assert from "assert";
 import type {
   IConnection,
   ISubscriber,
   ISubscriptionManager,
   IdentifiedOperationRequest,
   OperationRequest,
-  ISubscriptionEvent,
-} from './types';
-import { prefixRedisKey } from './helpers';
+  ISubscriptionEvent
+} from "./types";
+import { prefixRedisKey } from "./helpers";
+import { getRedisClient } from "./helpers/redis";
 
 // polyfill Symbol.asyncIterator
 if (Symbol.asyncIterator === undefined) {
-  (Symbol as any).asyncIterator = Symbol.for('asyncIterator');
+  (Symbol as any).asyncIterator = Symbol.for("asyncIterator");
 }
 
 interface RedisSubscriptionManagerOptions {
   /**
    * IORedis client instance
    */
-  redisClient: Redis;
+  redisClientHost: string;
   /**
    * Optional function that can get subscription name from event
    *
@@ -35,10 +35,7 @@ interface RedisSubscriptionManagerOptions {
    *
    * Useful for multi-tenancy
    */
-  getSubscriptionNameFromConnection?: (
-    name: string,
-    connection: IConnection,
-  ) => string;
+  getSubscriptionNameFromConnection?: (name: string, connection: IConnection) => string;
 }
 
 interface RedisSubscriber {
@@ -73,42 +70,40 @@ interface RedisSubscriber {
  *  value: redis list of subscription keys corresponding to eventName
  */
 export class RedisSubscriptionManager implements ISubscriptionManager {
-  private redisClient: Redis;
+  private redisClientHost: string;
 
   private getSubscriptionNameFromEvent: (event: ISubscriptionEvent) => string;
 
-  private getSubscriptionNameFromConnection: (
-    name: string,
-    connection: IConnection,
-  ) => string;
+  private getSubscriptionNameFromConnection: (name: string, connection: IConnection) => string;
 
   constructor({
-    redisClient,
+    redisClientHost,
     getSubscriptionNameFromEvent = event => event.event,
-    getSubscriptionNameFromConnection = name => name,
+    getSubscriptionNameFromConnection = name => name
   }: RedisSubscriptionManagerOptions) {
     assert.ok(
-      redisClient == null || typeof redisClient === 'object',
-      'Please provide redisClient as an instance of ioredis.Redis',
+      redisClientHost == null || typeof redisClientHost === "string",
+      "Please provide redisClient as an instance of ioredis.Redis"
     );
 
-    this.redisClient = redisClient;
+    this.redisClientHost = redisClientHost;
     this.getSubscriptionNameFromEvent = getSubscriptionNameFromEvent;
     this.getSubscriptionNameFromConnection = getSubscriptionNameFromConnection;
   }
 
   subscribersByEvent = (
-    event: ISubscriptionEvent,
+    event: ISubscriptionEvent
   ): AsyncIterable<ISubscriber[]> & AsyncIterator<ISubscriber[]> => {
     let offset = 0;
     const name = this.getSubscriptionNameFromEvent(event);
 
     return {
       next: async () => {
-        const keys = await this.redisClient.lrange(
+        const redisClient = await getRedisClient(this.redisClientHost);
+        const keys = await redisClient.lrange(
           prefixRedisKey(`eventSubscriptionsList:${name}`),
           offset,
-          offset + 50,
+          offset + 50
         );
 
         offset += 50;
@@ -116,61 +111,52 @@ export class RedisSubscriptionManager implements ISubscriptionManager {
         if (keys.length === 0) {
           return { value: [], done: true };
         }
-        const subscribers = (
-          await this.redisClient.mget(...keys)
-        ).map((sub: string | null) => (sub ? JSON.parse(sub) : null));
+        const subscribers = (await redisClient.mget(...keys)).map((sub: string | null) =>
+          sub ? JSON.parse(sub) : null
+        );
         return { value: subscribers, done: false };
       },
       [Symbol.asyncIterator]() {
         return this;
-      },
+      }
     };
   };
 
   subscribe = async (
     names: string[],
     connection: IConnection,
-    operation: IdentifiedOperationRequest,
+    operation: IdentifiedOperationRequest
   ): Promise<void> => {
-    const subscriptionId = this.generateSubscriptionId(
-      connection.id,
-      operation.operationId,
-    );
+    const redisClient = await getRedisClient(this.redisClientHost);
+    const subscriptionId = this.generateSubscriptionId(connection.id, operation.operationId);
 
     // we can only subscribe to one subscription in GQL document
     if (names.length !== 1) {
-      throw new Error('Only one active operation per event name is allowed');
+      throw new Error("Only one active operation per event name is allowed");
     }
     let [eventName] = names;
     eventName = this.getSubscriptionNameFromConnection(eventName, connection);
 
-    const subscriptionOperationKey = prefixRedisKey(
-      `subscriptionOperation:${subscriptionId}`,
-    );
-    const subscriptionKey = prefixRedisKey(
-      `subscription:${subscriptionId}:{${eventName}}`,
-    );
+    const subscriptionOperationKey = prefixRedisKey(`subscriptionOperation:${subscriptionId}`);
+    const subscriptionKey = prefixRedisKey(`subscription:${subscriptionId}:{${eventName}}`);
 
     await Promise.all([
-      this.redisClient.set(
+      redisClient.set(
         subscriptionKey,
         JSON.stringify({
           connection,
           operation,
           event: eventName,
           subscriptionId,
-          operationId: operation.operationId,
-        } as RedisSubscriber),
+          operationId: operation.operationId
+        } as RedisSubscriber)
       ),
-      this.redisClient.set(subscriptionOperationKey, eventName),
-      this.redisClient.lpush(
-        prefixRedisKey(`eventSubscriptionsList:${eventName}`),
-        subscriptionKey,
-      ),
-      this.redisClient.lpush(
+      redisClient.set(subscriptionOperationKey, eventName),
+      redisClient.lpush(prefixRedisKey(`eventSubscriptionsList:${eventName}`), subscriptionKey),
+      redisClient.lpush(
         prefixRedisKey(`connectionSubscriptionsList:${connection.id}`),
-        subscriptionKey,
-      ),
+        subscriptionKey
+      )
     ]);
   };
 
@@ -182,56 +168,43 @@ export class RedisSubscriptionManager implements ISubscriptionManager {
   };
 
   unsubscribeOperation = async (connectionId: string, operationId: string) => {
-    const subscriptionId = this.generateSubscriptionId(
-      connectionId,
-      operationId,
-    );
+    const redisClient = await getRedisClient(this.redisClientHost);
+    const subscriptionId = this.generateSubscriptionId(connectionId, operationId);
 
-    const subscriptionOperationKey = prefixRedisKey(
-      `subscriptionOperation:${subscriptionId}`,
-    );
-    const eventName = await this.redisClient.get(subscriptionOperationKey);
-    const subscriptionKey = prefixRedisKey(
-      `subscription:${subscriptionId}:{${eventName}}`,
-    );
+    const subscriptionOperationKey = prefixRedisKey(`subscriptionOperation:${subscriptionId}`);
+    const eventName = await redisClient.get(subscriptionOperationKey);
+    const subscriptionKey = prefixRedisKey(`subscription:${subscriptionId}:{${eventName}}`);
 
     let subscriber;
-    const result = await this.redisClient.get(subscriptionKey);
+    const result = await redisClient.get(subscriptionKey);
     if (result) {
       subscriber = JSON.parse(result);
       await Promise.all([
-        this.redisClient.del(subscriptionOperationKey),
-        this.redisClient.del(subscriptionKey),
-        this.redisClient.lrem(
+        redisClient.del(subscriptionOperationKey),
+        redisClient.del(subscriptionKey),
+        redisClient.lrem(
           prefixRedisKey(`eventSubscriptionsList:${subscriber.event}`),
           0,
-          subscriptionKey,
+          subscriptionKey
         ),
-        this.redisClient.lrem(
-          prefixRedisKey(
-            `connectionSubscriptionsList:${subscriber.connection.id}`,
-          ),
+        redisClient.lrem(
+          prefixRedisKey(`connectionSubscriptionsList:${subscriber.connection.id}`),
           0,
-          subscriptionKey,
-        ),
+          subscriptionKey
+        )
       ]);
     }
   };
 
   unsubscribeAllByConnectionId = async (connectionId: string) => {
+    const redisClient = await getRedisClient(this.redisClientHost);
     let done = false;
     const limit = 50;
     let offset = 0;
-    const subscriptionListKey = prefixRedisKey(
-      `connectionSubscriptionsList:${connectionId}`,
-    );
+    const subscriptionListKey = prefixRedisKey(`connectionSubscriptionsList:${connectionId}`);
 
     do {
-      const keys = await this.redisClient.lrange(
-        subscriptionListKey,
-        offset,
-        offset + limit,
-      );
+      const keys = await redisClient.lrange(subscriptionListKey, offset, offset + limit);
       offset += limit;
 
       if (!keys || keys.length === 0) {
@@ -241,41 +214,36 @@ export class RedisSubscriptionManager implements ISubscriptionManager {
           keys.map(async (key: string | null) => {
             if (key) {
               let subscriber;
-              const result = await this.redisClient.get(key);
+              const result = await redisClient.get(key);
               if (result) {
                 subscriber = JSON.parse(result);
                 const subscriptionId = this.generateSubscriptionId(
                   connectionId,
-                  subscriber.operationId,
+                  subscriber.operationId
                 );
                 const subscriptionOperationKey = prefixRedisKey(
-                  `subscriptionOperation:${subscriptionId}`,
+                  `subscriptionOperation:${subscriptionId}`
                 );
                 await Promise.all([
-                  this.redisClient.del(subscriptionOperationKey),
-                  this.redisClient.lrem(subscriptionListKey, 0, key),
-                  this.redisClient.lrem(
-                    prefixRedisKey(
-                      `eventSubscriptionsList:${subscriber.event}`,
-                    ),
+                  redisClient.del(subscriptionOperationKey),
+                  redisClient.lrem(subscriptionListKey, 0, key),
+                  redisClient.lrem(
+                    prefixRedisKey(`eventSubscriptionsList:${subscriber.event}`),
                     0,
-                    key,
-                  ),
+                    key
+                  )
                 ]);
               }
             }
-          }),
+          })
         );
-        await this.redisClient.del(...keys);
+        await redisClient.del(...keys);
       }
     } while (!done);
-    await this.redisClient.del(subscriptionListKey);
+    await redisClient.del(subscriptionListKey);
   };
 
-  generateSubscriptionId = (
-    connectionId: string,
-    operationId: string,
-  ): string => {
+  generateSubscriptionId = (connectionId: string, operationId: string): string => {
     return `${connectionId}:${operationId}`;
   };
 }

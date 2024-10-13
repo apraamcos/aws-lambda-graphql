@@ -1,5 +1,4 @@
 import assert from "assert";
-import type { Redis } from "ioredis";
 import { ConnectionNotFoundError } from "./errors";
 import type {
   IConnection,
@@ -15,6 +14,7 @@ import {
   DeleteConnectionCommand,
   PostToConnectionCommand
 } from "@aws-sdk/client-apigatewaymanagementapi";
+import { getRedisClient } from "./helpers/redis";
 
 interface RedisConnectionManagerOptions {
   /**
@@ -26,7 +26,7 @@ interface RedisConnectionManagerOptions {
   /**
    * IORedis client instance
    */
-  redisClient: Redis;
+  redisClientHost: string;
   subscriptions: ISubscriptionManager;
 }
 
@@ -38,17 +38,21 @@ interface RedisConnectionManagerOptions {
 export class RedisConnectionManager implements IConnectionManager {
   private apiGatewayManager: ApiGatewayManagementApiClient | undefined;
 
-  private redisClient: Redis;
+  private redisClientHost: string;
 
   private subscriptions: ISubscriptionManager;
 
-  constructor({ apiGatewayManager, redisClient, subscriptions }: RedisConnectionManagerOptions) {
+  constructor({
+    apiGatewayManager,
+    redisClientHost,
+    subscriptions
+  }: RedisConnectionManagerOptions) {
     assert.ok(
       typeof subscriptions === "object",
       "Please provide subscriptions to manage subscriptions."
     );
     assert.ok(
-      redisClient == null || typeof redisClient === "object",
+      redisClientHost == null || typeof redisClientHost === "string",
       "Please provide redisClient as an instance of ioredis.Redis"
     );
     assert.ok(
@@ -57,7 +61,7 @@ export class RedisConnectionManager implements IConnectionManager {
     );
 
     this.apiGatewayManager = apiGatewayManager;
-    this.redisClient = redisClient;
+    this.redisClientHost = redisClientHost;
     this.subscriptions = subscriptions;
   }
 
@@ -65,13 +69,14 @@ export class RedisConnectionManager implements IConnectionManager {
     connectionId: string,
     options: HydrateConnectionOptions
   ): Promise<IConnection> => {
+    const redisClient = await getRedisClient(this.redisClientHost);
     const { retryCount = 0, timeout = 50 } = options || {};
     // if connection is not found, throw so we can terminate connection
     let connection;
 
     for (let i = 0; i <= retryCount; i++) {
       const key = prefixRedisKey(`connection:${connectionId}`);
-      const result = await this.redisClient.get(key);
+      const result = await redisClient.get(key);
       if (result) {
         // Jump out of loop
         connection = JSON.parse(result) as IConnection;
@@ -89,7 +94,8 @@ export class RedisConnectionManager implements IConnectionManager {
   };
 
   setConnectionData = async (data: IConnectionData, connection: IConnection): Promise<void> => {
-    await this.redisClient.set(
+    const redisClient = await getRedisClient(this.redisClientHost);
+    await redisClient.set(
       prefixRedisKey(`connection:${connection.id}`),
       JSON.stringify({
         ...connection,
@@ -101,12 +107,13 @@ export class RedisConnectionManager implements IConnectionManager {
   };
 
   registerConnection = async ({ connectionId, endpoint }: IConnectEvent): Promise<IConnection> => {
+    const redisClient = await getRedisClient(this.redisClientHost);
     const connection: IConnection = {
       id: connectionId,
       data: { endpoint, context: {}, isInitialized: false }
     };
 
-    await this.redisClient.set(
+    await redisClient.set(
       prefixRedisKey(`connection:${connectionId}`),
       JSON.stringify({
         createdAt: new Date().toString(),
@@ -121,7 +128,7 @@ export class RedisConnectionManager implements IConnectionManager {
 
   sendToConnection = async (connection: IConnection, payload: string | Buffer): Promise<void> => {
     try {
-      const res = await this.createApiGatewayManager(connection.data.endpoint).send(
+      await this.createApiGatewayManager(connection.data.endpoint).send(
         new PostToConnectionCommand({
           ConnectionId: connection.id,
           Data: payload
@@ -139,11 +146,9 @@ export class RedisConnectionManager implements IConnectionManager {
   };
 
   unregisterConnection = async ({ id }: IConnection): Promise<void> => {
+    const redisClient = await getRedisClient(this.redisClientHost);
     const key = prefixRedisKey(`connection:${id}`);
-    await Promise.all([
-      this.redisClient.del(key),
-      this.subscriptions.unsubscribeAllByConnectionId(id)
-    ]);
+    await Promise.all([redisClient.del(key), this.subscriptions.unsubscribeAllByConnectionId(id)]);
   };
 
   closeConnection = async ({ id, data }: IConnection): Promise<void> => {
