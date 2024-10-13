@@ -127,19 +127,12 @@ export class RedisConnectionManager implements IConnectionManager {
           Data: payload
         })
       );
-      console.log(JSON.stringify(res));
-      if (res.$metadata.httpStatusCode === 410) {
-        console.info("In here 1!");
-        await this.unregisterConnection(connection);
-      }
     } catch (e) {
       // this is stale connection
       // remove it from store
-      if (e && e.httpStatusCode === 410) {
-        console.info("In here 2!");
+      if (e.$metadata?.httpStatusCode === 410) {
         await this.unregisterConnection(connection);
       } else {
-        console.info(3, JSON.stringify(e));
         throw e;
       }
     }

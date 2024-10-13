@@ -210,10 +210,9 @@ export class DynamoDBConnectionManager implements IConnectionManager {
         })
       );
     } catch (e) {
-      console.error(JSON.stringify(e));
       // this is stale connection
-      // remove it from DB
-      if (e && e.statusCode === 410) {
+      // remove it from store
+      if (e.$metadata?.httpStatusCode === 410) {
         await this.unregisterConnection(connection);
       } else {
         throw e;
