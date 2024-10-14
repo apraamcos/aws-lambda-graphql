@@ -2,7 +2,7 @@ import type {
   GQLOperation,
   GQLConnectionACK,
   GQLErrorEvent,
-  GQLData,
+  GQLNext,
   GQLComplete,
   GQLStopOperation,
   GQLConnectionInit
@@ -12,7 +12,7 @@ type AllowedProtocolEvents =
   | GQLOperation
   | GQLConnectionACK
   | GQLErrorEvent
-  | GQLData
+  | GQLNext
   | GQLComplete
   | GQLConnectionInit
   | GQLStopOperation;

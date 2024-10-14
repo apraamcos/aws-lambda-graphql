@@ -3,7 +3,7 @@ import {
   isGQLConnectionInit,
   isGQLOperation,
   isGQLStopOperation,
-  isGQLConnectionTerminate
+  isGQLDisconnect
 } from "../protocol";
 import { ExtendableError } from "../errors";
 import type { APIGatewayWebSocketEvent, IdentifiedOperationRequest } from "../types";
@@ -40,7 +40,7 @@ export function parseOperationFromEvent(
     return operation;
   }
 
-  if (isGQLConnectionTerminate(operation)) {
+  if (isGQLDisconnect(operation)) {
     return operation;
   }
 

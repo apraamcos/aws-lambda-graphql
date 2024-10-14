@@ -65,7 +65,7 @@ export class MemoryEventProcessor<TServer extends Server = Server>
                   formatMessage({
                     id: subscriber.operationId,
                     payload: result.value,
-                    type: SERVER_EVENT_TYPES.GQL_DATA
+                    type: SERVER_EVENT_TYPES.GQL_NEXT
                   })
                 );
               }

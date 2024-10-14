@@ -28,7 +28,7 @@ import {
   SERVER_EVENT_TYPES,
   isGQLConnectionInit,
   isGQLStopOperation,
-  isGQLConnectionTerminate
+  isGQLDisconnect
 } from "./protocol";
 import { formatMessage } from "./formatMessage";
 import type { ExecutionParams } from "./execute";
@@ -279,9 +279,9 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
 
             return {
               body: "",
-              headers: event.headers?.["Sec-WebSocket-Protocol"]?.includes("graphql-ws")
+              headers: event.headers?.["Sec-WebSocket-Protocol"]?.includes("graphql-transport-ws")
                 ? {
-                    "Sec-WebSocket-Protocol": "graphql-ws"
+                    "Sec-WebSocket-Protocol": "graphql-transport-ws"
                   }
                 : undefined,
               statusCode: 200
@@ -448,7 +448,7 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
               };
             }
 
-            if (isGQLConnectionTerminate(operation)) {
+            if (isGQLDisconnect(operation)) {
               // unregisterConnection will be handled by $disconnect, return straightaway
               return {
                 body: "",
@@ -495,7 +495,7 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
               const response = formatMessage({
                 id: (operation as IdentifiedOperationRequest).operationId,
                 payload: result as ExecutionResult,
-                type: SERVER_EVENT_TYPES.GQL_DATA
+                type: SERVER_EVENT_TYPES.GQL_NEXT
               });
               await this.connectionManager.sendToConnection(connection, response);
               return {

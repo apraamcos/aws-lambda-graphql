@@ -111,7 +111,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 1" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -119,7 +119,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 1" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -127,7 +127,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 2" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -135,7 +135,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 2" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -143,7 +143,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 2" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(mockLog).toHaveBeenCalledWith("Send event ", {
@@ -245,7 +245,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 1" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -253,7 +253,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 1" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -261,7 +261,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 2" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -269,7 +269,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 2" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -277,7 +277,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 2" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
   });
@@ -440,7 +440,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 2" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -448,7 +448,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 2" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -456,7 +456,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 2" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -464,7 +464,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 3" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
     expect(connectionManager.sendToConnection).toHaveBeenCalledWith(
@@ -472,7 +472,7 @@ describe("DynamoDBEventProcessor", () => {
       formatMessage({
         id: "1",
         payload: { data: { textFeed: "test 3" } },
-        type: SERVER_EVENT_TYPES.GQL_DATA
+        type: SERVER_EVENT_TYPES.GQL_NEXT
       })
     );
   });

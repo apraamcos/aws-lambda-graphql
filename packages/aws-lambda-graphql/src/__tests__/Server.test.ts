@@ -349,7 +349,7 @@ describe("Server", () => {
           handler(
             {
               headers: {
-                "Sec-WebSocket-Protocol": "graphql-ws"
+                "Sec-WebSocket-Protocol": "graphql-transport-ws"
               },
               requestContext: {
                 connectionId: "1",
@@ -364,7 +364,7 @@ describe("Server", () => {
           expect.objectContaining({
             body: "",
             headers: {
-              "Sec-WebSocket-Protocol": "graphql-ws"
+              "Sec-WebSocket-Protocol": "graphql-transport-ws"
             },
             statusCode: 200
           })
@@ -623,7 +623,7 @@ describe("Server", () => {
                 }
               `
             },
-            type: CLIENT_EVENT_TYPES.GQL_START
+            type: CLIENT_EVENT_TYPES.GQL_SUBSCRIBE
           }),
           requestContext: {
             connectionId: "1",
@@ -733,7 +733,7 @@ describe("Server", () => {
                     }
                   `
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START
+                type: CLIENT_EVENT_TYPES.GQL_SUBSCRIBE
               }),
               requestContext: {
                 connectionId: "1",
@@ -788,7 +788,7 @@ describe("Server", () => {
                     }
                   `
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START
+                type: CLIENT_EVENT_TYPES.GQL_SUBSCRIBE
               }),
               requestContext: {
                 connectionId: "1",
@@ -804,7 +804,7 @@ describe("Server", () => {
             body: formatMessage({
               id,
               payload: { data: { testQuery: "test" } },
-              type: SERVER_EVENT_TYPES.GQL_DATA
+              type: SERVER_EVENT_TYPES.GQL_NEXT
             }),
             statusCode: 200
           })
@@ -842,7 +842,7 @@ describe("Server", () => {
                     text: "Test this"
                   }
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START
+                type: CLIENT_EVENT_TYPES.GQL_SUBSCRIBE
               }),
               requestContext: {
                 connectionId: "1",
@@ -858,7 +858,7 @@ describe("Server", () => {
             body: formatMessage({
               id,
               payload: { data: { testMutation: "Test this" } },
-              type: SERVER_EVENT_TYPES.GQL_DATA
+              type: SERVER_EVENT_TYPES.GQL_NEXT
             }),
             statusCode: 200
           })
@@ -909,7 +909,7 @@ describe("Server", () => {
                     text: "variable from client"
                   }
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START
+                type: CLIENT_EVENT_TYPES.GQL_SUBSCRIBE
               }),
               requestContext: {
                 connectionId: "1",
@@ -925,7 +925,7 @@ describe("Server", () => {
             body: formatMessage({
               id,
               payload: { data: { testMutation: "variable from server" } },
-              type: SERVER_EVENT_TYPES.GQL_DATA
+              type: SERVER_EVENT_TYPES.GQL_NEXT
             }),
             statusCode: 200
           })
@@ -947,7 +947,7 @@ describe("Server", () => {
               body: formatMessage({
                 id,
                 payload: null,
-                type: CLIENT_EVENT_TYPES.GQL_CONNECTION_TERMINATE
+                type: CLIENT_EVENT_TYPES.GQL_DISCONNECT
               }),
               requestContext: {
                 connectionId: "1",
@@ -988,7 +988,7 @@ describe("Server", () => {
             {
               body: formatMessage({
                 id,
-                type: CLIENT_EVENT_TYPES.GQL_STOP
+                type: CLIENT_EVENT_TYPES.GQL_COMPLETE
               }),
               requestContext: {
                 connectionId: "1",
@@ -1042,7 +1042,7 @@ describe("Server", () => {
                     authorId: 1
                   }
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START
+                type: CLIENT_EVENT_TYPES.GQL_SUBSCRIBE
               }),
               requestContext: {
                 connectionId: "1",

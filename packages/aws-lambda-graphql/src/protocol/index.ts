@@ -1,16 +1,16 @@
 import type { DocumentNode, ExecutionResult } from "graphql";
 
 export enum CLIENT_EVENT_TYPES {
-  GQL_START = "start",
-  GQL_STOP = "stop",
+  GQL_SUBSCRIBE = "subscribe",
+  GQL_COMPLETE = "complete",
   GQL_CONNECTION_INIT = "connection_init",
-  GQL_CONNECTION_TERMINATE = "connection_terminate"
+  GQL_DISCONNECT = "disconnect"
 }
 
 export enum SERVER_EVENT_TYPES {
   GQL_CONNECTION_ACK = "connection_ack",
   GQL_ERROR = "error",
-  GQL_DATA = "data",
+  GQL_NEXT = "next",
   GQL_COMPLETE = "complete"
 }
 
@@ -24,17 +24,15 @@ export enum SERVER_EVENT_TYPES {
 export interface GQLOperation {
   id: string;
   payload: {
-    [key: string]: any;
-    extensions?: { [key: string]: any };
-    operationName?: string;
     query: string | DocumentNode;
     variables?: { [key: string]: any };
+    extensions?: { [key: string]: any };
   };
-  type: CLIENT_EVENT_TYPES.GQL_START;
+  type: CLIENT_EVENT_TYPES.GQL_SUBSCRIBE;
 }
 
 export function isGQLOperation(event: any): event is GQLOperation {
-  return event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_START;
+  return event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_SUBSCRIBE;
 }
 
 /**
@@ -43,26 +41,19 @@ export function isGQLOperation(event: any): event is GQLOperation {
  * Stops subscription
  */
 export interface GQLStopOperation {
-  /** The ID of GQLOperation used to subscribe */
   id: string;
-  // there is no payload
-  // https://github.com/apollographql/subscriptions-transport-ws/blob/master/src/client.ts#L665
-  type: CLIENT_EVENT_TYPES.GQL_STOP;
+  type: CLIENT_EVENT_TYPES.GQL_COMPLETE;
 }
 
 export function isGQLStopOperation(event: any): event is GQLStopOperation {
-  return event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_STOP;
+  return event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_COMPLETE;
 }
 
 /**
  * Client -> Server
  */
 export interface GQLConnectionInit {
-  // id is not sent
-  // see https://github.com/apollographql/subscriptions-transport-ws/blob/master/src/client.ts#L559
-  payload?: {
-    [key: string]: any;
-  };
+  payload?: { [key: string]: any };
   type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT;
 }
 
@@ -75,19 +66,17 @@ export function isGQLConnectionInit(event: any): event is GQLConnectionInit {
 /**
  * Client -> Server
  */
-export interface GQLConnectionTerminate {
+export interface GQLDisconnect {
   // id is not sent
   // see https://github.com/apollographql/subscriptions-transport-ws/blob/master/src/client.ts#L170
   payload?: {
     [key: string]: any;
   };
-  type: CLIENT_EVENT_TYPES.GQL_CONNECTION_TERMINATE;
+  type: CLIENT_EVENT_TYPES.GQL_DISCONNECT;
 }
 
-export function isGQLConnectionTerminate(event: any): event is GQLConnectionTerminate {
-  return (
-    event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_CONNECTION_TERMINATE
-  );
+export function isGQLDisconnect(event: any): event is GQLDisconnect {
+  return event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_DISCONNECT;
 }
 
 /**
@@ -126,15 +115,16 @@ export interface GQLErrorEvent {
 /**
  * Server -> Client - response to operation
  */
-export interface GQLData {
-  /**
-   * Same ID as the ID of an operation that we are returning a result for
-   */
+export interface GQLNext {
   id: string;
   payload: ExecutionResult;
-  type: SERVER_EVENT_TYPES.GQL_DATA;
+  type: SERVER_EVENT_TYPES.GQL_NEXT;
 }
 
-export type GQLClientAllEvents = GQLConnectionInit | GQLOperation | GQLStopOperation;
+export type GQLClientAllEvents =
+  | GQLOperation
+  | GQLStopOperation
+  | GQLConnectionInit
+  | GQLStopOperation;
 
-export type GQLServerAllEvents = GQLConnectionACK | GQLErrorEvent | GQLData | GQLComplete;
+export type GQLServerAllEvents = GQLComplete | GQLConnectionACK | GQLErrorEvent | GQLNext;
