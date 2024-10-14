@@ -1,7 +1,7 @@
-import { ExtendableError } from '..';
+import { ExtendableError } from "..";
 
-describe('ExtendableError', () => {
-  it('works correctly', () => {
+describe("ExtendableError", () => {
+  it("works correctly", () => {
     const error = new ExtendableError();
 
     expect(error).toBeInstanceOf(Error);
@@ -9,7 +9,7 @@ describe('ExtendableError', () => {
     expect(new Error()).not.toBeInstanceOf(ExtendableError);
   });
 
-  it('can be extended', () => {
+  it("can be extended", () => {
     class ExtendedExtendableError extends ExtendableError {}
 
     const error = new ExtendedExtendableError();

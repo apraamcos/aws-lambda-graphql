@@ -1,5 +1,5 @@
-import { createAsyncIterator } from 'iterall';
-import type { ISubscriptionEvent } from './types';
+import { createAsyncIterator } from "iterall";
+import type { ISubscriptionEvent } from "./types";
 
 /**
  * Array PubSub works as local PubSub that is already fed with all the events that were published
@@ -21,15 +21,15 @@ export class ArrayPubSub {
   }
 
   async publish() {
-    throw new Error('ArrayPubSub is read only');
+    throw new Error("ArrayPubSub is read only");
   }
 
   async subscribe(): Promise<number> {
-    throw new Error('Please do not use this PubSub implementation');
+    throw new Error("Please do not use this PubSub implementation");
   }
 
   async unsubscribe() {
-    throw new Error('Please do not use this PubSub implementation');
+    throw new Error("Please do not use this PubSub implementation");
   }
 
   asyncIterator(eventNames: string | string[]) {
@@ -39,10 +39,8 @@ export class ArrayPubSub {
       this.events
         .filter(event => names.includes(event.event))
         .map(event =>
-          typeof event.payload === 'string'
-            ? JSON.parse(event.payload)
-            : event.payload,
-        ),
+          typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload
+        )
     );
   }
 }

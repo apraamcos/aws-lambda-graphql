@@ -22,17 +22,17 @@ import {
   // @ts-ignore
   updateMock,
   // @ts-ignore
-  updatePromiseMock,
-} from 'aws-sdk';
-import { DynamoDBConnectionManager } from '../DynamoDBConnectionManager';
-import { ConnectionNotFoundError } from '../errors';
-import { computeTTL } from '../helpers';
+  updatePromiseMock
+} from "aws-sdk";
+import { DynamoDBConnectionManager } from "../DynamoDBConnectionManager";
+import { ConnectionNotFoundError } from "../errors";
+import { computeTTL } from "../helpers";
 
 const subscriptionManager: any = {
-  unsubscribeAllByConnectionId: jest.fn(),
+  unsubscribeAllByConnectionId: jest.fn()
 };
 
-describe('DynamoDBConnectionManager', () => {
+describe("DynamoDBConnectionManager", () => {
   beforeEach(() => {
     deleteMock.mockClear();
     getMock.mockClear();
@@ -48,21 +48,21 @@ describe('DynamoDBConnectionManager', () => {
     updatePromiseMock.mockReset();
   });
 
-  describe('registerConnection', () => {
-    it('registers connection by its connectionId and returns a Connection', async () => {
+  describe("registerConnection", () => {
+    it("registers connection by its connectionId and returns a Connection", async () => {
       const manager = new DynamoDBConnectionManager({
-        subscriptions: subscriptionManager,
+        subscriptions: subscriptionManager
       });
 
       await expect(
-        manager.registerConnection({ connectionId: 'id', endpoint: '' }),
+        manager.registerConnection({ connectionId: "id", endpoint: "" })
       ).resolves.toEqual({
-        id: 'id',
+        id: "id",
         data: {
-          endpoint: '',
+          endpoint: "",
           context: {},
-          isInitialized: false,
-        },
+          isInitialized: false
+        }
       });
 
       expect(putMock as jest.Mock).toHaveBeenCalledTimes(1);
@@ -72,173 +72,150 @@ describe('DynamoDBConnectionManager', () => {
             createdAt: expect.any(String),
             data: {
               context: {},
-              endpoint: '',
-              isInitialized: false,
+              endpoint: "",
+              isInitialized: false
             },
-            id: 'id',
-            ttl: expect.any(Number),
+            id: "id",
+            ttl: expect.any(Number)
           },
-          TableName: 'Connections',
-        }),
+          TableName: "Connections"
+        })
       );
     });
 
-    it('supports turning off ttl', async () => {
+    it("supports turning off ttl", async () => {
       const manager = new DynamoDBConnectionManager({
         subscriptions: subscriptionManager,
-        ttl: false,
+        ttl: false
       });
 
       await expect(
-        manager.registerConnection({ connectionId: 'id', endpoint: '' }),
+        manager.registerConnection({ connectionId: "id", endpoint: "" })
       ).resolves.toEqual({
-        id: 'id',
+        id: "id",
         data: {
-          endpoint: '',
+          endpoint: "",
           context: {},
-          isInitialized: false,
-        },
+          isInitialized: false
+        }
       });
 
       expect(putMock as jest.Mock).toHaveBeenCalledTimes(1);
       expect(putMock).not.toHaveBeenCalledWith(
         expect.objectContaining({
           Item: {
-            ttl: expect.any(Number),
+            ttl: expect.any(Number)
           },
-          TableName: 'Connections',
-        }),
+          TableName: "Connections"
+        })
       );
     });
   });
 
-  describe('hydrateConnection', () => {
+  describe("hydrateConnection", () => {
     const manager = new DynamoDBConnectionManager({
-      subscriptions: subscriptionManager,
+      subscriptions: subscriptionManager
     });
 
-    it('throws ConnectionNotFoundError if connection is not registered', async () => {
+    it("throws ConnectionNotFoundError if connection is not registered", async () => {
       (getPromiseMock as jest.Mock).mockResolvedValueOnce({ Item: null });
 
-      await expect(manager.hydrateConnection('id')).rejects.toThrowError(
-        ConnectionNotFoundError,
-      );
+      await expect(manager.hydrateConnection("id")).rejects.toThrowError(ConnectionNotFoundError);
 
       expect(getMock as jest.Mock).toHaveBeenCalledTimes(1);
     });
 
-    it('throws ConnectionNotFoundError if connection is expired', async () => {
+    it("throws ConnectionNotFoundError if connection is expired", async () => {
       (getPromiseMock as jest.Mock).mockResolvedValueOnce({
-        Item: { ttl: computeTTL(-10) },
+        Item: { ttl: computeTTL(-10) }
       });
 
-      await expect(manager.hydrateConnection('id')).rejects.toThrowError(
-        ConnectionNotFoundError,
-      );
+      await expect(manager.hydrateConnection("id")).rejects.toThrowError(ConnectionNotFoundError);
 
       expect(getMock as jest.Mock).toHaveBeenCalledTimes(1);
     });
 
-    it('hydrates connection', async () => {
+    it("hydrates connection", async () => {
       (getPromiseMock as jest.Mock).mockResolvedValueOnce({
-        Item: { id: 'id', data: { endpoint: '' } },
+        Item: { id: "id", data: { endpoint: "" } }
       });
 
-      await expect(manager.hydrateConnection('id')).resolves.toEqual({
-        id: 'id',
+      await expect(manager.hydrateConnection("id")).resolves.toEqual({
+        id: "id",
         data: {
-          endpoint: '',
-        },
+          endpoint: ""
+        }
       });
 
       expect(getMock as jest.Mock).toHaveBeenCalledTimes(1);
     });
 
-    it('hydrates connection with retry', async () => {
-      (getPromiseMock as jest.Mock)
-        .mockResolvedValueOnce({})
-        .mockResolvedValueOnce({
-          Item: { id: 'id', data: { endpoint: '' } },
-        });
+    it("hydrates connection with retry", async () => {
+      (getPromiseMock as jest.Mock).mockResolvedValueOnce({}).mockResolvedValueOnce({
+        Item: { id: "id", data: { endpoint: "" } }
+      });
 
-      await expect(
-        manager.hydrateConnection('id', { retryCount: 1 }),
-      ).resolves.toEqual({
-        id: 'id',
+      await expect(manager.hydrateConnection("id", { retryCount: 1 })).resolves.toEqual({
+        id: "id",
         data: {
-          endpoint: '',
-        },
+          endpoint: ""
+        }
       });
 
       expect(getMock as jest.Mock).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('setConnectionData', () => {
+  describe("setConnectionData", () => {
     const manager = new DynamoDBConnectionManager({
-      subscriptions: subscriptionManager,
+      subscriptions: subscriptionManager
     });
 
-    it('updates connection data', async () => {
-      await expect(
-        manager.setConnectionData({}, { id: 'id', data: {} }),
-      ).resolves.toBeUndefined();
+    it("updates connection data", async () => {
+      await expect(manager.setConnectionData({}, { id: "id", data: {} })).resolves.toBeUndefined();
       expect(updateMock as jest.Mock).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('sendToConnection', () => {
+  describe("sendToConnection", () => {
     const manager = new DynamoDBConnectionManager({
-      subscriptions: subscriptionManager,
+      subscriptions: subscriptionManager
     });
 
-    it('unregisters connection and all subscriptions if it is stale', async () => {
+    it("unregisters connection and all subscriptions if it is stale", async () => {
       const err = new Error();
       (err as any).statusCode = 410;
 
       (postToConnectionPromiseMock as jest.Mock).mockRejectedValueOnce(err);
 
       await expect(
-        manager.sendToConnection(
-          { id: 'id', data: { endpoint: '' } },
-          'stringified data',
-        ),
+        manager.sendToConnection({ id: "id", data: { endpoint: "" } }, "stringified data")
       ).resolves.toBeUndefined();
 
       expect(postToConnectionPromiseMock).toHaveBeenCalledTimes(1);
       expect(deletePromiseMock as jest.Mock).toHaveBeenCalledTimes(1);
-      expect(
-        subscriptionManager.unsubscribeAllByConnectionId,
-      ).toHaveBeenCalledTimes(1);
-      expect(
-        subscriptionManager.unsubscribeAllByConnectionId,
-      ).toHaveBeenCalledWith('id');
+      expect(subscriptionManager.unsubscribeAllByConnectionId).toHaveBeenCalledTimes(1);
+      expect(subscriptionManager.unsubscribeAllByConnectionId).toHaveBeenCalledWith("id");
     });
 
-    it('throws error if unknown error happens', async () => {
-      const err = new Error('Unknown error');
+    it("throws error if unknown error happens", async () => {
+      const err = new Error("Unknown error");
 
       (postToConnectionPromiseMock as jest.Mock).mockRejectedValueOnce(err);
 
       await expect(
-        manager.sendToConnection(
-          { id: 'id', data: { endpoint: '' } },
-          'stringified data',
-        ),
+        manager.sendToConnection({ id: "id", data: { endpoint: "" } }, "stringified data")
       ).rejects.toThrowError(err);
 
       expect(postToConnectionPromiseMock).toHaveBeenCalledTimes(1);
       expect(deletePromiseMock as jest.Mock).not.toHaveBeenCalled();
     });
 
-    it('sends data to connection', async () => {
+    it("sends data to connection", async () => {
       (postToConnectionPromiseMock as jest.Mock).mockResolvedValueOnce({});
 
       await expect(
-        manager.sendToConnection(
-          { id: 'id', data: { endpoint: '' } },
-          'stringified data',
-        ),
+        manager.sendToConnection({ id: "id", data: { endpoint: "" } }, "stringified data")
       ).resolves.toBeUndefined();
 
       expect(postToConnectionPromiseMock).toHaveBeenCalledTimes(1);
@@ -246,32 +223,28 @@ describe('DynamoDBConnectionManager', () => {
     });
   });
 
-  describe('unregisterConnection', () => {
+  describe("unregisterConnection", () => {
     const manager = new DynamoDBConnectionManager({
-      subscriptions: subscriptionManager,
+      subscriptions: subscriptionManager
     });
 
-    it('deletes connection', async () => {
+    it("deletes connection", async () => {
       (deletePromiseMock as jest.Mock).mockResolvedValueOnce({
-        Item: { id: 'id', data: {} },
+        Item: { id: "id", data: {} }
       });
 
-      await expect(
-        manager.unregisterConnection({ id: 'id', data: {} }),
-      ).resolves.toBeUndefined();
+      await expect(manager.unregisterConnection({ id: "id", data: {} })).resolves.toBeUndefined();
 
       expect(deletePromiseMock as jest.Mock).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('closeConnection', () => {
+  describe("closeConnection", () => {
     const manager = new DynamoDBConnectionManager({
-      subscriptions: subscriptionManager,
+      subscriptions: subscriptionManager
     });
-    it('closes connection', async () => {
-      await expect(
-        manager.closeConnection({ id: 'id', data: {} }),
-      ).resolves.toBeUndefined();
+    it("closes connection", async () => {
+      await expect(manager.closeConnection({ id: "id", data: {} })).resolves.toBeUndefined();
       expect(deleteConnectionPromiseMock).toHaveBeenCalledTimes(1);
     });
   });

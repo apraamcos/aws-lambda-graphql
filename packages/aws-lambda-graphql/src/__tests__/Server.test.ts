@@ -1,91 +1,87 @@
-import { APIGatewayProxyEvent } from 'aws-lambda';
-import { ulid } from 'ulid';
-import { createSchema } from '../fixtures/schema';
-import { Server } from '../Server';
-import {
-  IConnection,
-  IConnectionManager,
-  ISubscriptionManager,
-} from '../types';
-import { formatMessage } from '../formatMessage';
-import { SERVER_EVENT_TYPES, CLIENT_EVENT_TYPES } from '../protocol';
-import { ConnectionNotFoundError } from '../errors';
-import { MemoryEventProcessor } from '../MemoryEventProcessor';
+import { APIGatewayProxyEvent } from "aws-lambda";
+import { ulid } from "ulid";
+import { createSchema } from "../fixtures/schema";
+import { Server } from "../Server";
+import { IConnection, IConnectionManager, ISubscriptionManager } from "../types";
+import { formatMessage } from "../formatMessage";
+import { SERVER_EVENT_TYPES, CLIENT_EVENT_TYPES } from "../protocol";
+import { ConnectionNotFoundError } from "../errors";
+import { MemoryEventProcessor } from "../MemoryEventProcessor";
 
-describe('Server', () => {
-  describe('createHttpHandler()', () => {
+describe("Server", () => {
+  describe("createHttpHandler()", () => {
     const server = new Server({
       connectionManager: {} as any,
       eventProcessor: new MemoryEventProcessor(),
       schema: createSchema(),
-      subscriptionManager: {} as any,
+      subscriptionManager: {} as any
     });
     const handler = server.createHttpHandler();
 
-    it('serves JSON POST requests', async () => {
+    it("serves JSON POST requests", async () => {
       const event: APIGatewayProxyEvent = {
-        httpMethod: 'POST',
+        httpMethod: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           query: /* GraphQL */ `
             query Test {
               testQuery
             }
-          `,
-        }),
+          `
+        })
       } as any;
 
       await expect(handler(event, {} as any)).resolves.toEqual({
-        body: `${JSON.stringify({ data: { testQuery: 'test' } })}\n`,
+        body: `${JSON.stringify({ data: { testQuery: "test" } })}\n`,
         headers: {
-          'Content-Length': '30',
-          'Content-Type': 'application/json',
+          "Content-Length": "30",
+          "Content-Type": "application/json"
         },
-        statusCode: 200,
+        statusCode: 200
       });
     });
 
-    it('server GET requests', async () => {
+    it("server GET requests", async () => {
       const event: any = {
-        httpMethod: 'GET',
+        httpMethod: "GET",
         headers: {},
         queryStringParameters: {
           query: /* GraphQL */ `
             query Test {
               testQuery
             }
-          `,
-        },
+          `
+        }
       } as Partial<APIGatewayProxyEvent>;
 
       await expect(handler(event, {} as any)).resolves.toEqual({
-        body: `${JSON.stringify({ data: { testQuery: 'test' } })}\n`,
+        body: `${JSON.stringify({ data: { testQuery: "test" } })}\n`,
         headers: {
-          'Content-Length': '30',
-          'Content-Type': 'application/json',
+          "Content-Length": "30",
+          "Content-Type": "application/json"
         },
-        statusCode: 200,
+        statusCode: 200
       });
     });
   });
 
-  describe('createWebSocketHandler', () => {
+  describe("createWebSocketHandler", () => {
     const connectionManager: IConnectionManager = {
       closeConnection: jest.fn(),
       registerConnection: jest.fn(),
       hydrateConnection: jest.fn(),
       sendToConnection: jest.fn(),
       setConnectionData: jest.fn(),
-      unregisterConnection: jest.fn(),
+      unregisterConnection: jest.fn()
     };
     const subscriptionManager: ISubscriptionManager = {
       subscribe: jest.fn(),
       subscribersByEventName: jest.fn(),
       unsubscribe: jest.fn(),
       unsubscribeAllByConnectionId: jest.fn(),
-      unsubscribeOperation: jest.fn(),
+      unsubscribeOperation: jest.fn()
     };
 
     beforeEach(() => {
@@ -100,103 +96,95 @@ describe('Server', () => {
       }
     });
 
-    describe('connect phase', () => {
+    describe("connect phase", () => {
       const server = new Server({
         connectionManager,
         eventProcessor: new MemoryEventProcessor(),
         schema: createSchema(),
-        subscriptionManager,
+        subscriptionManager
       });
       const handler = server.createWebSocketHandler();
 
-      it('returns http 500 if connection could not be registered', async () => {
+      it("returns http 500 if connection could not be registered", async () => {
         (connectionManager.registerConnection as jest.Mock).mockRejectedValueOnce(
-          new Error('Could not register a connection'),
+          new Error("Could not register a connection")
         );
 
         await expect(
           handler(
             {
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$connect',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$connect",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual({
-          body: 'Could not register a connection',
-          statusCode: 500,
+          body: "Could not register a connection",
+          statusCode: 500
         });
 
         expect(connectionManager.registerConnection).toHaveBeenCalledTimes(1);
         expect(connectionManager.registerConnection).toHaveBeenCalledWith({
-          endpoint: 'domain/stage',
-          connectionId: '1',
+          endpoint: "domain/stage",
+          connectionId: "1"
         });
       });
 
-      it('returns http 200 with the body of GQL_CONNECTED message', async () => {
-        (connectionManager.registerConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
+      it("returns http 200 with the body of GQL_CONNECTED message", async () => {
+        (connectionManager.registerConnection as jest.Mock).mockResolvedValueOnce({});
 
         await expect(
           handler(
             {
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$connect',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$connect",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
-            body: '',
-            statusCode: 200,
-          }),
+            body: "",
+            statusCode: 200
+          })
         );
 
         expect(connectionManager.registerConnection).toHaveBeenCalledTimes(1);
         expect(connectionManager.registerConnection).toHaveBeenCalledWith({
-          endpoint: 'domain/stage',
-          connectionId: '1',
+          endpoint: "domain/stage",
+          connectionId: "1"
         });
       });
 
-      it('calls onWebsocketConnect and sets return object as context', async () => {
-        (connectionManager.registerConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
-        const onWebsocketConnect = jest
-          .fn()
-          .mockResolvedValueOnce({ key: 'value1' });
+      it("calls onWebsocketConnect and sets return object as context", async () => {
+        (connectionManager.registerConnection as jest.Mock).mockResolvedValueOnce({});
+        const onWebsocketConnect = jest.fn().mockResolvedValueOnce({ key: "value1" });
         const handlerWithOnWebsocketConnect = new Server({
           connectionManager,
           eventProcessor: new MemoryEventProcessor(),
           schema: createSchema(),
           subscriptionManager,
           subscriptions: {
-            onWebsocketConnect,
-          },
+            onWebsocketConnect
+          }
         }).createWebSocketHandler();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({});
 
         const event = {
           requestContext: {
-            connectionId: '1',
-            domainName: 'domain',
-            routeKey: '$connect',
-            stage: 'stage',
-          } as any,
+            connectionId: "1",
+            domainName: "domain",
+            routeKey: "$connect",
+            stage: "stage"
+          } as any
         } as any;
         await handlerWithOnWebsocketConnect(event, {} as any);
 
@@ -206,59 +194,53 @@ describe('Server', () => {
         expect(connectionManager.setConnectionData).toHaveBeenCalledTimes(1);
         expect(connectionManager.setConnectionData).toHaveBeenCalledWith(
           {
-            context: { key: 'value1' },
+            context: { key: "value1" }
           },
-          {},
+          {}
         );
       });
 
-      it('registers connection with the endpoint value of connectionEndpoint option', async () => {
-        (connectionManager.registerConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
-        (connectionManager.setConnectionData as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
+      it("registers connection with the endpoint value of connectionEndpoint option", async () => {
+        (connectionManager.registerConnection as jest.Mock).mockResolvedValueOnce({});
+        (connectionManager.setConnectionData as jest.Mock).mockResolvedValueOnce({});
         const handlerWithConnectionEndpoint = new Server({
           connectionManager,
           eventProcessor: new MemoryEventProcessor(),
           schema: createSchema(),
           subscriptionManager,
           subscriptions: {
-            connectionEndpoint: 'customdomain',
-          },
+            connectionEndpoint: "customdomain"
+          }
         }).createWebSocketHandler();
 
         await expect(
           handlerWithConnectionEndpoint(
             {
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$connect',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$connect",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
-            body: '',
-            statusCode: 200,
-          }),
+            body: "",
+            statusCode: 200
+          })
         );
 
         expect(connectionManager.registerConnection).toHaveBeenCalledTimes(1);
         expect(connectionManager.registerConnection).toHaveBeenCalledWith({
-          endpoint: 'customdomain',
-          connectionId: '1',
+          endpoint: "customdomain",
+          connectionId: "1"
         });
       });
 
-      it('refuses connection when onWebsocketConnect returns false', async () => {
-        (connectionManager.registerConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
+      it("refuses connection when onWebsocketConnect returns false", async () => {
+        (connectionManager.registerConnection as jest.Mock).mockResolvedValueOnce({});
         const onWebsocketConnect = jest.fn().mockResolvedValueOnce(false);
         const handlerWithOnWebsocketConnect = new Server({
           connectionManager,
@@ -266,39 +248,33 @@ describe('Server', () => {
           schema: createSchema(),
           subscriptionManager,
           subscriptions: {
-            onWebsocketConnect,
-          },
+            onWebsocketConnect
+          }
         }).createWebSocketHandler();
 
         // @ts-ignore
         const testEvent = {
           requestContext: {
-            connectionId: '1',
-            domainName: 'domain',
-            routeKey: '$connect',
-            stage: 'stage',
-          } as any,
+            connectionId: "1",
+            domainName: "domain",
+            routeKey: "$connect",
+            stage: "stage"
+          } as any
         } as any;
         const testContext = { testContextVariable: true } as any;
 
-        await expect(
-          handlerWithOnWebsocketConnect(testEvent, testContext),
-        ).resolves.toEqual(
+        await expect(handlerWithOnWebsocketConnect(testEvent, testContext)).resolves.toEqual(
           expect.objectContaining({
             body: formatMessage({
               type: SERVER_EVENT_TYPES.GQL_ERROR,
-              payload: { message: 'Prohibited connection!' },
+              payload: { message: "Prohibited connection!" }
             }),
-            statusCode: 401,
-          }),
+            statusCode: 401
+          })
         );
 
         expect(onWebsocketConnect).toHaveBeenCalledTimes(1);
-        expect(onWebsocketConnect).toHaveBeenCalledWith(
-          {},
-          testEvent,
-          testContext,
-        );
+        expect(onWebsocketConnect).toHaveBeenCalledWith({}, testEvent, testContext);
 
         expect(connectionManager.setConnectionData).toHaveBeenCalledTimes(0);
 
@@ -308,96 +284,90 @@ describe('Server', () => {
         expect(connectionManager.unregisterConnection).toHaveBeenCalledWith({});
       });
 
-      it('recover from missing connection on quick succession of $connect and GQL_CONNECTION_INIT message on offline server', async () => {
+      it("recover from missing connection on quick succession of $connect and GQL_CONNECTION_INIT message on offline server", async () => {
         // Mock the connection database flow
         let connection;
-        (connectionManager.registerConnection as jest.Mock).mockImplementation(
-          async (c) => {
-            connection = c;
-            return connection;
-          },
-        );
+        (connectionManager.registerConnection as jest.Mock).mockImplementation(async c => {
+          connection = c;
+          return connection;
+        });
         (connectionManager.hydrateConnection as jest.Mock).mockImplementationOnce(
-          async (connectionId) => {
+          async connectionId => {
             for (let i = 0; i <= 1; i++) {
               if (connection) {
                 return connection as IConnection;
               }
               // wait for another round
-              await new Promise((r) => setTimeout(r, 50));
+              await new Promise(r => setTimeout(r, 50));
             }
-            throw new ConnectionNotFoundError(
-              `Connection ${connectionId} not found`,
-            );
-          },
+            throw new ConnectionNotFoundError(`Connection ${connectionId} not found`);
+          }
         );
         // Call connection request before connect to over emphasize the case
         const gqlConnectionRequest = handler(
           {
             body: formatMessage({
               payload: {
-                contextAttribute: 'contextAttributeValue',
+                contextAttribute: "contextAttributeValue"
               },
-              type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT,
+              type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT
             }),
             requestContext: {
-              connectionId: '1',
-              domainName: 'domain',
-              routeKey: '$default',
-              stage: 'stage',
-            } as any,
+              connectionId: "1",
+              domainName: "domain",
+              routeKey: "$default",
+              stage: "stage"
+            } as any
           } as any,
-          {} as any,
+          {} as any
         );
         await handler(
           {
             requestContext: {
-              connectionId: '1',
-              domainName: 'domain',
-              routeKey: '$connect',
-              stage: 'stage',
-            } as any,
+              connectionId: "1",
+              domainName: "domain",
+              routeKey: "$connect",
+              stage: "stage"
+            } as any
           } as any,
-          {} as any,
+          {} as any
         );
         await expect(gqlConnectionRequest).resolves.toEqual(
           expect.objectContaining({
             body: formatMessage({
-              type: SERVER_EVENT_TYPES.GQL_CONNECTION_ACK,
+              type: SERVER_EVENT_TYPES.GQL_CONNECTION_ACK
             }),
-            statusCode: 200,
-          }),
+            statusCode: 200
+          })
         );
       });
 
-      it('passes provided Sec-WebSocket-Protocol header', async () => {
-        (connectionManager.registerConnection as jest.Mock).mockResolvedValue(
-          {},
-        );
+      it("passes provided Sec-WebSocket-Protocol header", async () => {
+        (connectionManager.registerConnection as jest.Mock).mockResolvedValue({});
 
         await expect(
           handler(
             {
               headers: {
-                'Sec-WebSocket-Protocol': 'graphql-ws',
+                "Sec-WebSocket-Protocol": "graphql-ws"
               },
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$connect',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$connect",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
-            body: '',
+            body: "",
             headers: {
-              'Sec-WebSocket-Protocol': 'graphql-ws',
+              "Sec-WebSocket-Protocol": "graphql-ws"
             },
-            statusCode: 200,
-          }),
+            statusCode: 200
+          })
         );
 
         await expect(
@@ -405,65 +375,61 @@ describe('Server', () => {
             {
               headers: {},
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$connect',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$connect",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
-            body: '',
+            body: "",
             headers: undefined,
-            statusCode: 200,
-          }),
+            statusCode: 200
+          })
         );
       });
     });
 
-    describe('disconnect phase', () => {
+    describe("disconnect phase", () => {
       const server = new Server({
         connectionManager,
         eventProcessor: new MemoryEventProcessor(),
         schema: createSchema(),
-        subscriptionManager,
+        subscriptionManager
       });
       const handler = server.createWebSocketHandler();
 
-      it('unregisters connection', async () => {
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
-        (connectionManager.unregisterConnection as jest.Mock).mockResolvedValueOnce(
-          undefined,
-        );
+      it("unregisters connection", async () => {
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({});
+        (connectionManager.unregisterConnection as jest.Mock).mockResolvedValueOnce(undefined);
 
         await expect(
           handler(
             {
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$disconnect',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$disconnect",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual({
           statusCode: 200,
-          body: '',
+          body: ""
         });
 
         expect(connectionManager.hydrateConnection).toHaveBeenCalledTimes(1);
-        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith('1');
+        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith("1");
         expect(connectionManager.unregisterConnection).toHaveBeenCalledTimes(1);
         expect(connectionManager.unregisterConnection).toHaveBeenCalledWith({});
       });
 
-      it('calls onDisconnect', async () => {
+      it("calls onDisconnect", async () => {
         const onDisconnect = jest.fn();
         const handlerWithOnDisconnect = new Server({
           connectionManager,
@@ -471,29 +437,27 @@ describe('Server', () => {
           schema: createSchema(),
           subscriptionManager,
           subscriptions: {
-            onDisconnect,
-          },
+            onDisconnect
+          }
         }).createWebSocketHandler();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({});
 
         await expect(
           handlerWithOnDisconnect(
             {
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$disconnect',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$disconnect",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual({
           statusCode: 200,
-          body: '',
+          body: ""
         });
 
         expect(onDisconnect).toHaveBeenCalledTimes(1);
@@ -501,18 +465,18 @@ describe('Server', () => {
       });
     });
 
-    describe('message phase', () => {
+    describe("message phase", () => {
       const server = new Server({
         connectionManager,
         eventProcessor: new MemoryEventProcessor(),
         schema: createSchema(),
-        subscriptionManager,
+        subscriptionManager
       });
       const handler = server.createWebSocketHandler();
 
-      it('returns http 500 if connection could not be hydrated', async () => {
+      it("returns http 500 if connection could not be hydrated", async () => {
         (connectionManager.hydrateConnection as jest.Mock).mockRejectedValueOnce(
-          new Error('Conection could not be hydrated'),
+          new Error("Conection could not be hydrated")
         );
 
         await expect(
@@ -520,144 +484,133 @@ describe('Server', () => {
             {
               body: formatMessage({
                 payload: {},
-                type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT,
+                type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT
               }),
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$default',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$default",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual({
-          body: 'Conection could not be hydrated',
-          statusCode: 500,
+          body: "Conection could not be hydrated",
+          statusCode: 500
         });
 
         expect(connectionManager.hydrateConnection).toHaveBeenCalledTimes(1);
-        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith('1', {
+        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith("1", {
           retryCount: 1,
-          timeout: 50,
+          timeout: 50
         });
       });
 
-      it('returns http 200 with GQL_CONNECTION_ACK on connection_init operation and sets context', async () => {
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
+      it("returns http 200 with GQL_CONNECTION_ACK on connection_init operation and sets context", async () => {
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({});
 
         await expect(
           handler(
             {
               body: formatMessage({
                 payload: {
-                  contextAttribute: 'contextAttributeValue',
+                  contextAttribute: "contextAttributeValue"
                 },
-                type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT,
+                type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT
               }),
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$default',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$default",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
             body: formatMessage({
-              type: SERVER_EVENT_TYPES.GQL_CONNECTION_ACK,
+              type: SERVER_EVENT_TYPES.GQL_CONNECTION_ACK
             }),
-            statusCode: 200,
-          }),
+            statusCode: 200
+          })
         );
 
         expect(connectionManager.hydrateConnection).toHaveBeenCalledTimes(1);
-        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith('1', {
+        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith("1", {
           retryCount: 1,
-          timeout: 50,
+          timeout: 50
         });
         expect(connectionManager.sendToConnection).toHaveBeenCalledTimes(1);
         expect(connectionManager.setConnectionData).toHaveBeenCalledTimes(1);
         expect(connectionManager.setConnectionData).toHaveBeenCalledWith(
           {
-            context: { contextAttribute: 'contextAttributeValue' },
-            isInitialized: true,
+            context: { contextAttribute: "contextAttributeValue" },
+            isInitialized: true
           },
-          {},
+          {}
         );
       });
 
-      it('calls onConnect and sets return object as context', async () => {
-        const onConnect = jest.fn().mockResolvedValueOnce({ key: 'value1' });
+      it("calls onConnect and sets return object as context", async () => {
+        const onConnect = jest.fn().mockResolvedValueOnce({ key: "value1" });
         const handlerWithOnConnect = new Server({
           connectionManager,
           eventProcessor: new MemoryEventProcessor(),
           schema: createSchema(),
           subscriptionManager,
           subscriptions: {
-            onConnect,
-          },
+            onConnect
+          }
         }).createWebSocketHandler();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({});
 
         const event = {
           body: formatMessage({
-            payload: { key: 'value2' },
-            type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT,
+            payload: { key: "value2" },
+            type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT
           }),
           requestContext: {
-            connectionId: '1',
-            domainName: 'domain',
-            routeKey: '$default',
-            stage: 'stage',
-          } as any,
+            connectionId: "1",
+            domainName: "domain",
+            routeKey: "$default",
+            stage: "stage"
+          } as any
         } as any;
         await handlerWithOnConnect(event, {} as any);
 
         expect(onConnect).toHaveBeenCalledTimes(1);
-        expect(onConnect).toHaveBeenCalledWith(
-          { key: 'value2' },
-          {},
-          event,
-          {},
-        );
+        expect(onConnect).toHaveBeenCalledWith({ key: "value2" }, {}, event, {});
 
         expect(connectionManager.setConnectionData).toHaveBeenCalledTimes(1);
         expect(connectionManager.setConnectionData).toHaveBeenCalledWith(
           {
-            context: { key: 'value1' },
-            isInitialized: true,
+            context: { key: "value1" },
+            isInitialized: true
           },
-          {},
+          {}
         );
       });
 
-      it('calls context constructor function with event, lambdaContext, internal context and connection state context', async () => {
+      it("calls context constructor function with event, lambdaContext, internal context and connection state context", async () => {
         const contextBuilder = jest.fn();
         const handlerWithContext = new Server({
           connectionManager,
           eventProcessor: new MemoryEventProcessor(),
           context: contextBuilder,
           schema: createSchema(),
-          subscriptionManager,
+          subscriptionManager
         }).createWebSocketHandler();
         const id = ulid();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {
-            data: {
-              context: { foo: 'connectionContextValue' },
-              isInitialized: true,
-            },
-          },
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({
+          data: {
+            context: { foo: "connectionContextValue" },
+            isInitialized: true
+          }
+        });
 
         const lambdaContext = {} as any;
         const event = {
@@ -668,30 +621,30 @@ describe('Server', () => {
                 query Test {
                   testQuery
                 }
-              `,
+              `
             },
-            type: CLIENT_EVENT_TYPES.GQL_START,
+            type: CLIENT_EVENT_TYPES.GQL_START
           }),
           requestContext: {
-            connectionId: '1',
-            domainName: 'domain',
-            routeKey: '$default',
-            stage: 'stage',
-          } as any,
+            connectionId: "1",
+            domainName: "domain",
+            routeKey: "$default",
+            stage: "stage"
+          } as any
         } as any;
 
         await handlerWithContext(event, lambdaContext);
 
         expect(contextBuilder).toHaveBeenCalledTimes(1);
         expect(contextBuilder).toHaveBeenCalledWith({
-          foo: 'connectionContextValue',
+          foo: "connectionContextValue",
           event,
           lambdaContext,
-          $$internal: expect.any(Object),
+          $$internal: expect.any(Object)
         });
       });
 
-      it('refuses connection when onConnect returns false', async () => {
+      it("refuses connection when onConnect returns false", async () => {
         const onConnect = jest.fn().mockResolvedValueOnce(false);
         const handlerWithOnConnect = new Server({
           connectionManager,
@@ -699,39 +652,35 @@ describe('Server', () => {
           schema: createSchema(),
           subscriptionManager,
           subscriptions: {
-            onConnect,
-          },
+            onConnect
+          }
         }).createWebSocketHandler();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {},
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({});
 
         // @ts-ignore
         const testEvent = {
           body: formatMessage({
             payload: {},
-            type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT,
+            type: CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT
           }),
           requestContext: {
-            connectionId: '1',
-            domainName: 'domain',
-            routeKey: '$default',
-            stage: 'stage',
-          } as any,
+            connectionId: "1",
+            domainName: "domain",
+            routeKey: "$default",
+            stage: "stage"
+          } as any
         } as any;
         const testContext = { testContextVariable: true } as any;
 
-        await expect(
-          handlerWithOnConnect(testEvent, testContext),
-        ).resolves.toEqual(
+        await expect(handlerWithOnConnect(testEvent, testContext)).resolves.toEqual(
           expect.objectContaining({
             body: formatMessage({
               type: SERVER_EVENT_TYPES.GQL_ERROR,
-              payload: { message: 'Prohibited connection!' },
+              payload: { message: "Prohibited connection!" }
             }),
-            statusCode: 401,
-          }),
+            statusCode: 401
+          })
         );
 
         expect(onConnect).toHaveBeenCalledTimes(1);
@@ -744,15 +693,15 @@ describe('Server', () => {
           {},
           formatMessage({
             type: SERVER_EVENT_TYPES.GQL_ERROR,
-            payload: { message: 'Prohibited connection!' },
-          }),
+            payload: { message: "Prohibited connection!" }
+          })
         );
 
         expect(connectionManager.closeConnection).toHaveBeenCalledTimes(1);
         expect(connectionManager.closeConnection).toHaveBeenCalledWith({});
       });
 
-      it('returns http 401 on not initialized connection operation', async () => {
+      it("returns http 401 on not initialized connection operation", async () => {
         const handlerWithTimeout = new Server({
           connectionManager,
           eventProcessor: new MemoryEventProcessor(),
@@ -761,15 +710,15 @@ describe('Server', () => {
           subscriptions: {
             waitForInitialization: {
               timeout: 4,
-              retryCount: 2,
-            },
-          },
+              retryCount: 2
+            }
+          }
         }).createWebSocketHandler();
         const id = ulid();
 
         // because of retry count of 2
         (connectionManager.hydrateConnection as jest.Mock).mockResolvedValue({
-          data: { isInitialized: false },
+          data: { isInitialized: false }
         });
 
         await expect(
@@ -782,35 +731,35 @@ describe('Server', () => {
                     query Test {
                       testQuery
                     }
-                  `,
+                  `
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START,
+                type: CLIENT_EVENT_TYPES.GQL_START
               }),
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$default',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$default",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
             body: formatMessage({
               type: SERVER_EVENT_TYPES.GQL_ERROR,
-              payload: { message: 'Prohibited connection!' },
+              payload: { message: "Prohibited connection!" }
             }),
-            statusCode: 401,
-          }),
+            statusCode: 401
+          })
         );
 
         expect(connectionManager.hydrateConnection).toHaveBeenCalledTimes(4);
-        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith('1');
+        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith("1");
         expect(connectionManager.sendToConnection).toHaveBeenCalledTimes(1);
       });
 
-      it('returns http 200 with GQL_DATA on query operation and calls onOperationComplete', async () => {
+      it("returns http 200 with GQL_DATA on query operation and calls onOperationComplete", async () => {
         const onOperationComplete = jest.fn();
         const handlerWithOnOperationComplete = new Server({
           connectionManager,
@@ -818,16 +767,14 @@ describe('Server', () => {
           schema: createSchema(),
           subscriptionManager,
           subscriptions: {
-            onOperationComplete,
-          },
+            onOperationComplete
+          }
         }).createWebSocketHandler();
         const id = ulid();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {
-            data: { isInitialized: true },
-          },
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({
+          data: { isInitialized: true }
+        });
 
         await expect(
           handlerWithOnOperationComplete(
@@ -839,51 +786,46 @@ describe('Server', () => {
                     query Test {
                       testQuery
                     }
-                  `,
+                  `
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START,
+                type: CLIENT_EVENT_TYPES.GQL_START
               }),
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$default',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$default",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
             body: formatMessage({
               id,
-              payload: { data: { testQuery: 'test' } },
-              type: SERVER_EVENT_TYPES.GQL_DATA,
+              payload: { data: { testQuery: "test" } },
+              type: SERVER_EVENT_TYPES.GQL_DATA
             }),
-            statusCode: 200,
-          }),
+            statusCode: 200
+          })
         );
 
         expect(connectionManager.hydrateConnection).toHaveBeenCalledTimes(1);
-        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith('1', {
+        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith("1", {
           retryCount: 1,
-          timeout: 50,
+          timeout: 50
         });
         expect(connectionManager.sendToConnection).toHaveBeenCalledTimes(1);
         expect(onOperationComplete).toHaveBeenCalledTimes(1);
-        expect(onOperationComplete).toHaveBeenCalledWith(
-          { data: { isInitialized: true } },
-          id,
-        );
+        expect(onOperationComplete).toHaveBeenCalledWith({ data: { isInitialized: true } }, id);
       });
 
-      it('returns http 200 with GQL_DATA on mutation operation', async () => {
+      it("returns http 200 with GQL_DATA on mutation operation", async () => {
         const id = ulid();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {
-            data: { isInitialized: true },
-          },
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({
+          data: { isInitialized: true }
+        });
 
         await expect(
           handler(
@@ -897,45 +839,45 @@ describe('Server', () => {
                     }
                   `,
                   variables: {
-                    text: 'Test this',
-                  },
+                    text: "Test this"
+                  }
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START,
+                type: CLIENT_EVENT_TYPES.GQL_START
               }),
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$default',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$default",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
             body: formatMessage({
               id,
-              payload: { data: { testMutation: 'Test this' } },
-              type: SERVER_EVENT_TYPES.GQL_DATA,
+              payload: { data: { testMutation: "Test this" } },
+              type: SERVER_EVENT_TYPES.GQL_DATA
             }),
-            statusCode: 200,
-          }),
+            statusCode: 200
+          })
         );
 
         expect(connectionManager.hydrateConnection).toHaveBeenCalledTimes(1);
-        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith('1', {
+        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith("1", {
           retryCount: 1,
-          timeout: 50,
+          timeout: 50
         });
         expect(connectionManager.sendToConnection).toHaveBeenCalledTimes(1);
       });
 
-      it('calls onOperation and changes execute parameters on mutation operation', async () => {
+      it("calls onOperation and changes execute parameters on mutation operation", async () => {
         const onOperation = jest.fn((message, params) => ({
           ...params,
           variables: {
-            text: 'variable from server',
-          },
+            text: "variable from server"
+          }
         }));
         const handlerWithOnOperation = new Server({
           connectionManager,
@@ -943,16 +885,14 @@ describe('Server', () => {
           schema: createSchema(),
           subscriptionManager,
           subscriptions: {
-            onOperation,
-          },
+            onOperation
+          }
         }).createWebSocketHandler();
         const id = ulid();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {
-            data: { isInitialized: true },
-          },
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({
+          data: { isInitialized: true }
+        });
 
         await expect(
           handlerWithOnOperation(
@@ -966,42 +906,40 @@ describe('Server', () => {
                     }
                   `,
                   variables: {
-                    text: 'variable from client',
-                  },
+                    text: "variable from client"
+                  }
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START,
+                type: CLIENT_EVENT_TYPES.GQL_START
               }),
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$default',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$default",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
             body: formatMessage({
               id,
-              payload: { data: { testMutation: 'variable from server' } },
-              type: SERVER_EVENT_TYPES.GQL_DATA,
+              payload: { data: { testMutation: "variable from server" } },
+              type: SERVER_EVENT_TYPES.GQL_DATA
             }),
-            statusCode: 200,
-          }),
+            statusCode: 200
+          })
         );
 
         expect(onOperation).toHaveBeenCalledTimes(1);
       });
 
-      it('returns http 200 with GQL_CONNECTION_TERMINATE', async () => {
+      it("returns http 200 with GQL_CONNECTION_TERMINATE", async () => {
         const id = ulid();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {
-            data: { isInitialized: true },
-          },
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({
+          data: { isInitialized: true }
+        });
 
         await expect(
           handler(
@@ -1009,26 +947,26 @@ describe('Server', () => {
               body: formatMessage({
                 id,
                 payload: null,
-                type: CLIENT_EVENT_TYPES.GQL_CONNECTION_TERMINATE,
+                type: CLIENT_EVENT_TYPES.GQL_CONNECTION_TERMINATE
               }),
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$default',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$default",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
-            body: '',
-            statusCode: 200,
-          }),
+            body: "",
+            statusCode: 200
+          })
         );
       });
 
-      it('returns http 200 with GQL_COMPLETE on unsubscibe and calls onOperationComplete', async () => {
+      it("returns http 200 with GQL_COMPLETE on unsubscibe and calls onOperationComplete", async () => {
         const onOperationComplete = jest.fn();
         const handlerWithOnOperation = new Server({
           connectionManager,
@@ -1036,67 +974,58 @@ describe('Server', () => {
           schema: createSchema(),
           subscriptionManager,
           subscriptions: {
-            onOperationComplete,
-          },
+            onOperationComplete
+          }
         }).createWebSocketHandler();
         const id = ulid();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {
-            data: { isInitialized: true },
-          },
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({
+          data: { isInitialized: true }
+        });
 
         await expect(
           handlerWithOnOperation(
             {
               body: formatMessage({
                 id,
-                type: CLIENT_EVENT_TYPES.GQL_STOP,
+                type: CLIENT_EVENT_TYPES.GQL_STOP
               }),
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$default',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$default",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
             body: formatMessage({
               id,
-              type: SERVER_EVENT_TYPES.GQL_COMPLETE,
+              type: SERVER_EVENT_TYPES.GQL_COMPLETE
             }),
-            statusCode: 200,
-          }),
+            statusCode: 200
+          })
         );
 
         expect(connectionManager.hydrateConnection).toHaveBeenCalledTimes(1);
-        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith('1', {
+        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith("1", {
           retryCount: 1,
-          timeout: 50,
+          timeout: 50
         });
-        expect(subscriptionManager.unsubscribeOperation).toHaveBeenCalledTimes(
-          1,
-        );
+        expect(subscriptionManager.unsubscribeOperation).toHaveBeenCalledTimes(1);
         expect(connectionManager.sendToConnection).toHaveBeenCalledTimes(1);
         expect(onOperationComplete).toHaveBeenCalledTimes(1);
-        expect(onOperationComplete).toHaveBeenCalledWith(
-          { data: { isInitialized: true } },
-          id,
-        );
+        expect(onOperationComplete).toHaveBeenCalledWith({ data: { isInitialized: true } }, id);
       });
 
-      it('returns http 200 with GQL_DATA on invalid operation', async () => {
+      it("returns http 200 with GQL_DATA on invalid operation", async () => {
         const id = ulid();
 
-        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce(
-          {
-            data: { isInitialized: true },
-          },
-        );
+        (connectionManager.hydrateConnection as jest.Mock).mockResolvedValueOnce({
+          data: { isInitialized: true }
+        });
 
         await expect(
           handler(
@@ -1110,33 +1039,33 @@ describe('Server', () => {
                     }
                   `,
                   variables: {
-                    authorId: 1,
-                  },
+                    authorId: 1
+                  }
                 },
-                type: CLIENT_EVENT_TYPES.GQL_START,
+                type: CLIENT_EVENT_TYPES.GQL_START
               }),
               requestContext: {
-                connectionId: '1',
-                domainName: 'domain',
-                routeKey: '$default',
-                stage: 'stage',
-              } as any,
+                connectionId: "1",
+                domainName: "domain",
+                routeKey: "$default",
+                stage: "stage"
+              } as any
             } as any,
-            {} as any,
-          ),
+            {} as any
+          )
         ).resolves.toEqual(
           expect.objectContaining({
             body: expect.stringMatching(
-              /^\{"id":"[A-Z0-9]{26}","payload":\{.+Cannot query field.+\},"type":"data"\}$/,
+              /^\{"id":"[A-Z0-9]{26}","payload":\{.+Cannot query field.+\},"type":"data"\}$/
             ),
-            statusCode: 200,
-          }),
+            statusCode: 200
+          })
         );
 
         expect(connectionManager.hydrateConnection).toHaveBeenCalledTimes(1);
-        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith('1', {
+        expect(connectionManager.hydrateConnection).toHaveBeenCalledWith("1", {
           retryCount: 1,
-          timeout: 50,
+          timeout: 50
         });
         expect(connectionManager.sendToConnection).toHaveBeenCalledTimes(1);
       });

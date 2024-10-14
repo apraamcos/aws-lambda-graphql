@@ -1,25 +1,21 @@
-import gql from 'graphql-tag';
-import WebSocket from 'ws';
-import { SubscriptionClient } from 'subscriptions-transport-ws';
-import {
-  execute,
-  subscribe,
-  waitForClientToConnect,
-} from '../fixtures/helpers';
-import { TestLambdaServer } from '../fixtures/server';
+import gql from "graphql-tag";
+import WebSocket from "ws";
+import { SubscriptionClient } from "subscriptions-transport-ws";
+import { execute, subscribe, waitForClientToConnect } from "../fixtures/helpers";
+import { TestLambdaServer } from "../fixtures/server";
 
-describe('apollo client integration test', () => {
+describe("apollo client integration test", () => {
   let server: TestLambdaServer;
 
   beforeEach(async () => {
     server = new TestLambdaServer({
       port: 3002,
-      onConnect: (messagePayload) => {
+      onConnect: messagePayload => {
         if (messagePayload.isUnauthorized) {
           return false;
         }
         return messagePayload;
-      },
+      }
     });
 
     await server.start();
@@ -29,26 +25,22 @@ describe('apollo client integration test', () => {
     await server.close();
   });
 
-  describe('connect', () => {
-    it('connects to server', (done) => {
-      const client = new SubscriptionClient(
-        'ws://localhost:3002',
-        {},
-        WebSocket as any,
-      );
+  describe("connect", () => {
+    it("connects to server", done => {
+      const client = new SubscriptionClient("ws://localhost:3002", {}, WebSocket as any);
 
       client.onConnected(() => {
         done();
       });
     });
 
-    it('disconnects unauthorized client', (done) => {
+    it("disconnects unauthorized client", done => {
       const client = new SubscriptionClient(
-        'ws://localhost:3002',
+        "ws://localhost:3002",
         {
-          connectionParams: { isUnauthorized: true },
+          connectionParams: { isUnauthorized: true }
         },
-        WebSocket as any,
+        WebSocket as any
       );
 
       client.onDisconnected(() => {
@@ -57,25 +49,25 @@ describe('apollo client integration test', () => {
     });
   });
 
-  describe('subscriptions', () => {
-    it('streams results from a subscription', async () => {
+  describe("subscriptions", () => {
+    it("streams results from a subscription", async () => {
       const client1 = new SubscriptionClient(
-        'ws://localhost:3002',
+        "ws://localhost:3002",
         {
           timeout: 1000,
           // pass `authorId` to the subscription resolver context to filter subscription
-          connectionParams: { authorId: '1' },
+          connectionParams: { authorId: "1" }
         },
-        WebSocket as any,
+        WebSocket as any
       );
       const client2 = new SubscriptionClient(
-        'ws://localhost:3002',
+        "ws://localhost:3002",
         {
           timeout: 1000,
           // pass `authorId` to the subscription resolver context to filter subscription
-          connectionParams: { authorId: '2' },
+          connectionParams: { authorId: "2" }
         },
-        WebSocket as any,
+        WebSocket as any
       );
 
       const w1 = waitForClientToConnect(client1);
@@ -89,7 +81,7 @@ describe('apollo client integration test', () => {
           subscription test {
             textFeed
           }
-        `,
+        `
       });
       const operation2Iterator = subscribe({
         client: client2,
@@ -97,16 +89,16 @@ describe('apollo client integration test', () => {
           subscription test {
             textFeed
           }
-        `,
+        `
       });
 
       // now publish all messages
       await Promise.all(
         [
-          ['1', 'Test1'],
-          ['2', 'Test2'],
-          ['1', 'Test3'],
-          ['2', 'Test4'],
+          ["1", "Test1"],
+          ["2", "Test2"],
+          ["1", "Test3"],
+          ["2", "Test4"]
         ].map(([authorId, text]) =>
           execute({
             client: client1,
@@ -117,50 +109,46 @@ describe('apollo client integration test', () => {
             `,
             variables: {
               authorId,
-              text,
-            },
-          }),
-        ),
+              text
+            }
+          })
+        )
       );
 
       // wait for event processor to process events
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 200));
 
       expect(operation1Iterator.next()).toEqual({
         done: false,
-        value: { data: { textFeed: 'Test1' } },
+        value: { data: { textFeed: "Test1" } }
       });
       expect(operation1Iterator.next()).toEqual({
         done: false,
-        value: { data: { textFeed: 'Test3' } },
+        value: { data: { textFeed: "Test3" } }
       });
       expect(operation1Iterator.next()).toEqual({
         done: true,
-        value: undefined,
+        value: undefined
       });
 
       expect(operation2Iterator.next()).toEqual({
         done: false,
-        value: { data: { textFeed: 'Test2' } },
+        value: { data: { textFeed: "Test2" } }
       });
       expect(operation2Iterator.next()).toEqual({
         done: false,
-        value: { data: { textFeed: 'Test4' } },
+        value: { data: { textFeed: "Test4" } }
       });
       expect(operation2Iterator.next()).toEqual({
         done: true,
-        value: undefined,
+        value: undefined
       });
     });
   });
 
-  describe('operation', () => {
-    it('sends an operation and receives a result (success)', async () => {
-      const client = new SubscriptionClient(
-        'ws://localhost:3002',
-        {},
-        WebSocket as any,
-      );
+  describe("operation", () => {
+    it("sends an operation and receives a result (success)", async () => {
+      const client = new SubscriptionClient("ws://localhost:3002", {}, WebSocket as any);
 
       await waitForClientToConnect(client);
 
@@ -170,18 +158,14 @@ describe('apollo client integration test', () => {
           {
             testQuery
           }
-        `,
+        `
       });
 
-      expect(result).toEqual({ data: { testQuery: 'test' } });
+      expect(result).toEqual({ data: { testQuery: "test" } });
     });
 
-    it('sends an operation and receives a result (failure)', async () => {
-      const client = new SubscriptionClient(
-        'ws://localhost:3002',
-        {},
-        WebSocket as any,
-      );
+    it("sends an operation and receives a result (failure)", async () => {
+      const client = new SubscriptionClient("ws://localhost:3002", {}, WebSocket as any);
 
       await waitForClientToConnect(client);
 
@@ -191,19 +175,19 @@ describe('apollo client integration test', () => {
           {
             notExisting
           }
-        `,
+        `
       });
 
       expect(result.errors).toBeDefined();
     });
 
-    it('passes context to operation and gets context property back', async () => {
+    it("passes context to operation and gets context property back", async () => {
       const client = new SubscriptionClient(
-        'ws://localhost:3002',
+        "ws://localhost:3002",
         {
-          connectionParams: { foo: 'bar' },
+          connectionParams: { foo: "bar" }
         },
-        WebSocket as any,
+        WebSocket as any
       );
 
       await waitForClientToConnect(client);
@@ -214,10 +198,10 @@ describe('apollo client integration test', () => {
           {
             getFooPropertyFromContext
           }
-        `,
+        `
       });
 
-      expect(result).toEqual({ data: { getFooPropertyFromContext: 'bar' } });
+      expect(result).toEqual({ data: { getFooPropertyFromContext: "bar" } });
     });
   });
 });

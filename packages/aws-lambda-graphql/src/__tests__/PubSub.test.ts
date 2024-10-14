@@ -1,26 +1,26 @@
-import { isAsyncIterable } from 'iterall';
-import { PubSub as BasePubSub } from 'graphql-subscriptions';
-import { PubSub } from '../PubSub';
-import { ISubscriptionManager, IConnectionManager } from '../types';
+import { isAsyncIterable } from "iterall";
+import { PubSub as BasePubSub } from "graphql-subscriptions";
+import { PubSub } from "../PubSub";
+import { ISubscriptionManager, IConnectionManager } from "../types";
 
-describe('PubSub', () => {
+describe("PubSub", () => {
   const eventStore = {
-    publish: jest.fn(),
+    publish: jest.fn()
   };
 
   beforeEach(() => {
     eventStore.publish.mockReset();
   });
 
-  describe('subscribe', () => {
-    it('registers subscription and returns iterator', async () => {
+  describe("subscribe", () => {
+    it("registers subscription and returns iterator", async () => {
       const connectionManager: IConnectionManager = {} as any;
       const subscriptionManager: ISubscriptionManager = {
-        subscribe: jest.fn(),
+        subscribe: jest.fn()
       } as any;
       const ps = new PubSub({ eventStore: eventStore as any });
 
-      const subscriber = ps.subscribe('test');
+      const subscriber = ps.subscribe("test");
 
       const connection: any = {};
       const operation: any = {};
@@ -33,26 +33,22 @@ describe('PubSub', () => {
           operation,
           subscriptionManager,
           pubSub: new BasePubSub(),
-          registerSubscriptions: true,
-        },
+          registerSubscriptions: true
+        }
       });
 
       expect(isAsyncIterable(iterator)).toBe(true);
-      expect(subscriptionManager.subscribe).toHaveBeenCalledWith(
-        ['test'],
-        connection,
-        operation,
-      );
+      expect(subscriptionManager.subscribe).toHaveBeenCalledWith(["test"], connection, operation);
     });
 
-    it('skips subscription registration and returns iterator', async () => {
+    it("skips subscription registration and returns iterator", async () => {
       const connectionManager: IConnectionManager = {} as any;
       const subscriptionManager: ISubscriptionManager = {
-        subscribe: jest.fn(),
+        subscribe: jest.fn()
       } as any;
       const ps = new PubSub({ eventStore: eventStore as any });
 
-      const subscriber = ps.subscribe('test');
+      const subscriber = ps.subscribe("test");
 
       const connection: any = {};
       const operation: any = {};
@@ -64,8 +60,8 @@ describe('PubSub', () => {
           connectionManager,
           operation,
           subscriptionManager,
-          pubSub: new BasePubSub(),
-        },
+          pubSub: new BasePubSub()
+        }
       });
 
       expect(isAsyncIterable(iterator)).toBe(true);
@@ -73,45 +69,41 @@ describe('PubSub', () => {
     });
   });
 
-  describe('publish', () => {
-    it('does not allow to publish event with empty name', async () => {
+  describe("publish", () => {
+    it("does not allow to publish event with empty name", async () => {
       const ps = new PubSub({ eventStore: eventStore as any });
 
       await expect(ps.publish(undefined, {})).rejects.toThrowError(
-        'Event name must be nonempty string',
+        "Event name must be nonempty string"
       );
-      await expect(ps.publish(null, {})).rejects.toThrowError(
-        'Event name must be nonempty string',
-      );
-      await expect(ps.publish('', {})).rejects.toThrowError(
-        'Event name must be nonempty string',
-      );
+      await expect(ps.publish(null, {})).rejects.toThrowError("Event name must be nonempty string");
+      await expect(ps.publish("", {})).rejects.toThrowError("Event name must be nonempty string");
     });
 
-    it('serializes payload to JSON by default', async () => {
+    it("serializes payload to JSON by default", async () => {
       const ps = new PubSub({ eventStore: eventStore as any });
 
-      await expect(ps.publish('test', {})).resolves.toBeUndefined();
+      await expect(ps.publish("test", {})).resolves.toBeUndefined();
 
       expect(eventStore.publish).toBeCalledTimes(1);
       expect(eventStore.publish).toBeCalledWith({
-        event: 'test',
-        payload: JSON.stringify({}),
+        event: "test",
+        payload: JSON.stringify({})
       });
     });
 
-    it('sends raw payload if serialization is disabled', async () => {
+    it("sends raw payload if serialization is disabled", async () => {
       const ps = new PubSub({
         eventStore: eventStore as any,
-        serializeEventPayload: false,
+        serializeEventPayload: false
       });
 
-      await expect(ps.publish('test', { a: true })).resolves.toBeUndefined();
+      await expect(ps.publish("test", { a: true })).resolves.toBeUndefined();
 
       expect(eventStore.publish).toBeCalledTimes(1);
       expect(eventStore.publish).toBeCalledWith({
-        event: 'test',
-        payload: { a: true },
+        event: "test",
+        payload: { a: true }
       });
     });
   });

@@ -1,17 +1,17 @@
-import type { DocumentNode, ExecutionResult } from 'graphql';
+import type { DocumentNode, ExecutionResult } from "graphql";
 
 export enum CLIENT_EVENT_TYPES {
-  GQL_START = 'start',
-  GQL_STOP = 'stop',
-  GQL_CONNECTION_INIT = 'connection_init',
-  GQL_CONNECTION_TERMINATE = 'connection_terminate',
+  GQL_START = "start",
+  GQL_STOP = "stop",
+  GQL_CONNECTION_INIT = "connection_init",
+  GQL_CONNECTION_TERMINATE = "connection_terminate"
 }
 
 export enum SERVER_EVENT_TYPES {
-  GQL_CONNECTION_ACK = 'connection_ack',
-  GQL_ERROR = 'error',
-  GQL_DATA = 'data',
-  GQL_COMPLETE = 'complete',
+  GQL_CONNECTION_ACK = "connection_ack",
+  GQL_ERROR = "error",
+  GQL_DATA = "data",
+  GQL_COMPLETE = "complete"
 }
 
 /**
@@ -34,11 +34,7 @@ export interface GQLOperation {
 }
 
 export function isGQLOperation(event: any): event is GQLOperation {
-  return (
-    event &&
-    typeof event === 'object' &&
-    event.type === CLIENT_EVENT_TYPES.GQL_START
-  );
+  return event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_START;
 }
 
 /**
@@ -55,11 +51,7 @@ export interface GQLStopOperation {
 }
 
 export function isGQLStopOperation(event: any): event is GQLStopOperation {
-  return (
-    event &&
-    typeof event === 'object' &&
-    event.type === CLIENT_EVENT_TYPES.GQL_STOP
-  );
+  return event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_STOP;
 }
 
 /**
@@ -76,9 +68,7 @@ export interface GQLConnectionInit {
 
 export function isGQLConnectionInit(event: any): event is GQLConnectionInit {
   return (
-    event &&
-    typeof event === 'object' &&
-    event.type === CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT
+    event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_CONNECTION_INIT
   );
 }
 
@@ -94,13 +84,9 @@ export interface GQLConnectionTerminate {
   type: CLIENT_EVENT_TYPES.GQL_CONNECTION_TERMINATE;
 }
 
-export function isGQLConnectionTerminate(
-  event: any,
-): event is GQLConnectionTerminate {
+export function isGQLConnectionTerminate(event: any): event is GQLConnectionTerminate {
   return (
-    event &&
-    typeof event === 'object' &&
-    event.type === CLIENT_EVENT_TYPES.GQL_CONNECTION_TERMINATE
+    event && typeof event === "object" && event.type === CLIENT_EVENT_TYPES.GQL_CONNECTION_TERMINATE
   );
 }
 
@@ -149,13 +135,6 @@ export interface GQLData {
   type: SERVER_EVENT_TYPES.GQL_DATA;
 }
 
-export type GQLClientAllEvents =
-  | GQLConnectionInit
-  | GQLOperation
-  | GQLStopOperation;
+export type GQLClientAllEvents = GQLConnectionInit | GQLOperation | GQLStopOperation;
 
-export type GQLServerAllEvents =
-  | GQLConnectionACK
-  | GQLErrorEvent
-  | GQLData
-  | GQLComplete;
+export type GQLServerAllEvents = GQLConnectionACK | GQLErrorEvent | GQLData | GQLComplete;

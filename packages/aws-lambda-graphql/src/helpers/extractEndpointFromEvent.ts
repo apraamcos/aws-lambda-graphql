@@ -1,7 +1,5 @@
-import type { APIGatewayWebSocketEvent } from '../types';
+import type { APIGatewayWebSocketEvent } from "../types";
 
-export function extractEndpointFromEvent(
-  event: APIGatewayWebSocketEvent,
-): string {
+export function extractEndpointFromEvent(event: APIGatewayWebSocketEvent): string {
   return `${event.requestContext.domainName}/${event.requestContext.stage}`;
 }

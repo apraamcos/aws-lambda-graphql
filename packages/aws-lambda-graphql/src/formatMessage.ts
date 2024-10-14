@@ -5,8 +5,8 @@ import type {
   GQLData,
   GQLComplete,
   GQLStopOperation,
-  GQLConnectionInit,
-} from './protocol';
+  GQLConnectionInit
+} from "./protocol";
 
 type AllowedProtocolEvents =
   | GQLOperation
