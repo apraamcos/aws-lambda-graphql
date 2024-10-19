@@ -211,43 +211,147 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
     };
   }
 
-  /**
-   * Event handler is responsible for processing published events and sending them
-   * to all subscribed connections
-   */
-  public createEventHandler(): TEventHandler {
-    return this.eventProcessor.createHandler(this);
+  public createWebsocketHandler(): (
+    event: APIGatewayWebSocketEvent,
+    context: LambdaContext
+  ) => Promise<APIGatewayProxyResult> | TEventHandler {
+    return async (event, context) => {
+      if (this.isWebSocketEvent(event)) {
+        console.info("isWebSocketEvent", event);
+        return await this.handleWebSocketEvent(event, context);
+      } else {
+        console.info("isStreamEvent", event);
+        return await this.eventProcessor.createHandler(this)(event, context);
+      }
+    };
+  }
+
+  private isWebSocketEvent(event: any) {
+    return (
+      "requestContext" in event &&
+      "connectionId" in event.requestContext &&
+      "routeKey" in event.requestContext
+    );
   }
 
   /**
    * WebSocket handler is responsible for processing AWS API Gateway v2 events
    */
-  public createWebSocketHandler(): (
+  private handleWebSocketEvent = async (
     event: APIGatewayWebSocketEvent,
     context: LambdaContext
-  ) => Promise<APIGatewayProxyResult> {
-    return async (event, lambdaContext) => {
-      try {
-        // based on routeKey, do actions
-        switch (event.requestContext.routeKey) {
-          case "$connect": {
-            const { onWebsocketConnect, connectionEndpoint } = this.subscriptionOptions || {};
+  ): Promise<APIGatewayProxyResult> => {
+    try {
+      // based on routeKey, do actions
+      switch (event.requestContext.routeKey) {
+        case "$connect": {
+          const { onWebsocketConnect, connectionEndpoint } = this.subscriptionOptions || {};
 
-            // register connection
-            // if error is thrown during registration, connection is rejected
-            // we can implement some sort of authorization here
-            const endpoint = connectionEndpoint || extractEndpointFromEvent(event);
+          // register connection
+          // if error is thrown during registration, connection is rejected
+          // we can implement some sort of authorization here
+          const endpoint = connectionEndpoint || extractEndpointFromEvent(event);
 
-            const connection = await this.connectionManager.registerConnection({
-              endpoint,
-              connectionId: event.requestContext.connectionId
-            });
+          const connection = await this.connectionManager.registerConnection({
+            endpoint,
+            connectionId: event.requestContext.connectionId
+          });
 
-            let newConnectionContext = {};
+          let newConnectionContext = {};
 
-            if (onWebsocketConnect) {
+          if (onWebsocketConnect) {
+            try {
+              const result = await onWebsocketConnect(connection, event, context);
+
+              if (result === false) {
+                throw new Error("Prohibited connection!");
+              } else if (result !== null && typeof result === "object") {
+                newConnectionContext = result;
+              }
+            } catch (err) {
+              const errorResponse = formatMessage({
+                type: SERVER_EVENT_TYPES.GQL_ERROR,
+                payload: { message: err.message }
+              });
+
+              await this.connectionManager.unregisterConnection(connection);
+
+              return {
+                body: errorResponse,
+                statusCode: 401
+              };
+            }
+          }
+
+          // set connection context which will be available during graphql execution
+          const connectionData = {
+            ...connection.data,
+            context: newConnectionContext
+          };
+
+          await this.connectionManager.setConnectionData(connectionData, connection);
+
+          return {
+            body: "",
+            headers: event.headers?.["Sec-WebSocket-Protocol"]?.includes("graphql-transport-ws")
+              ? {
+                  "Sec-WebSocket-Protocol": "graphql-transport-ws"
+                }
+              : undefined,
+            statusCode: 200
+          };
+        }
+        case "$disconnect": {
+          const { onDisconnect } = this.subscriptionOptions || {};
+          // this event is called eventually by AWS APIGateway v2
+          // we actualy don't care about a result of this operation because client is already
+          // disconnected, it is meant only for clean up purposes
+          // hydrate connection
+          const connection = await this.connectionManager.hydrateConnection(
+            event.requestContext.connectionId
+          );
+
+          if (onDisconnect) {
+            onDisconnect(connection);
+          }
+
+          await this.connectionManager.unregisterConnection(connection);
+
+          return {
+            body: "",
+            statusCode: 200
+          };
+        }
+        case "$default": {
+          // here we are processing messages received from a client
+          // if we respond here and the route has integration response assigned
+          // it will send the body back to client, so it is easy to respond with operation results
+          const { connectionId } = event.requestContext;
+          const {
+            onConnect,
+            onOperation,
+            onOperationComplete,
+            waitForInitialization: {
+              retryCount: waitRetryCount = 10,
+              timeout: waitTimeout = 50
+            } = {}
+          } = this.subscriptionOptions || {};
+
+          // parse operation from body
+          const operation = parseOperationFromEvent(event);
+
+          // hydrate connection
+          let connection = await this.connectionManager.hydrateConnection(connectionId, {
+            retryCount: 1,
+            timeout: waitTimeout
+          });
+
+          if (isGQLConnectionInit(operation)) {
+            let newConnectionContext = operation.payload;
+
+            if (onConnect) {
               try {
-                const result = await onWebsocketConnect(connection, event, lambdaContext);
+                const result = await onConnect(operation.payload, connection, event, context);
 
                 if (result === false) {
                   throw new Error("Prohibited connection!");
@@ -260,7 +364,8 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
                   payload: { message: err.message }
                 });
 
-                await this.connectionManager.unregisterConnection(connection);
+                await this.connectionManager.sendToConnection(connection, errorResponse);
+                await this.connectionManager.closeConnection(connection);
 
                 return {
                   body: errorResponse,
@@ -272,260 +377,163 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
             // set connection context which will be available during graphql execution
             const connectionData = {
               ...connection.data,
-              context: newConnectionContext
+              context: {
+                ...connection.data?.context,
+                ...newConnectionContext
+              },
+              isInitialized: true
             };
 
             await this.connectionManager.setConnectionData(connectionData, connection);
 
-            return {
-              body: "",
-              headers: event.headers?.["Sec-WebSocket-Protocol"]?.includes("graphql-transport-ws")
-                ? {
-                    "Sec-WebSocket-Protocol": "graphql-transport-ws"
-                  }
-                : undefined,
-              statusCode: 200
-            };
-          }
-          case "$disconnect": {
-            const { onDisconnect } = this.subscriptionOptions || {};
-            // this event is called eventually by AWS APIGateway v2
-            // we actualy don't care about a result of this operation because client is already
-            // disconnected, it is meant only for clean up purposes
-            // hydrate connection
-            const connection = await this.connectionManager.hydrateConnection(
-              event.requestContext.connectionId
-            );
-
-            if (onDisconnect) {
-              onDisconnect(connection);
-            }
-
-            await this.connectionManager.unregisterConnection(connection);
-
-            return {
-              body: "",
-              statusCode: 200
-            };
-          }
-          case "$default": {
-            // here we are processing messages received from a client
-            // if we respond here and the route has integration response assigned
-            // it will send the body back to client, so it is easy to respond with operation results
-            const { connectionId } = event.requestContext;
-            const {
-              onConnect,
-              onOperation,
-              onOperationComplete,
-              waitForInitialization: {
-                retryCount: waitRetryCount = 10,
-                timeout: waitTimeout = 50
-              } = {}
-            } = this.subscriptionOptions || {};
-
-            // parse operation from body
-            const operation = parseOperationFromEvent(event);
-
-            // hydrate connection
-            let connection = await this.connectionManager.hydrateConnection(connectionId, {
-              retryCount: 1,
-              timeout: waitTimeout
+            // send GQL_CONNECTION_INIT message to client
+            const response = formatMessage({
+              type: SERVER_EVENT_TYPES.GQL_CONNECTION_ACK
             });
 
-            if (isGQLConnectionInit(operation)) {
-              let newConnectionContext = operation.payload;
+            await this.connectionManager.sendToConnection(connection, response);
 
-              if (onConnect) {
-                try {
-                  const result = await onConnect(
-                    operation.payload,
-                    connection,
-                    event,
-                    lambdaContext
-                  );
+            return {
+              body: response,
+              statusCode: 200
+            };
+          }
 
-                  if (result === false) {
-                    throw new Error("Prohibited connection!");
-                  } else if (result !== null && typeof result === "object") {
-                    newConnectionContext = result;
-                  }
-                } catch (err) {
-                  const errorResponse = formatMessage({
-                    type: SERVER_EVENT_TYPES.GQL_ERROR,
-                    payload: { message: err.message }
-                  });
+          // wait for connection to be initialized
+          connection = await (async () => {
+            let freshConnection: IConnection = connection;
 
-                  await this.connectionManager.sendToConnection(connection, errorResponse);
-                  await this.connectionManager.closeConnection(connection);
-
-                  return {
-                    body: errorResponse,
-                    statusCode: 401
-                  };
-                }
-              }
-
-              // set connection context which will be available during graphql execution
-              const connectionData = {
-                ...connection.data,
-                context: {
-                  ...connection.data?.context,
-                  ...newConnectionContext
-                },
-                isInitialized: true
-              };
-
-              await this.connectionManager.setConnectionData(connectionData, connection);
-
-              // send GQL_CONNECTION_INIT message to client
-              const response = formatMessage({
-                type: SERVER_EVENT_TYPES.GQL_CONNECTION_ACK
-              });
-
-              await this.connectionManager.sendToConnection(connection, response);
-
-              return {
-                body: response,
-                statusCode: 200
-              };
+            if (freshConnection.data.isInitialized) {
+              return freshConnection;
             }
 
-            // wait for connection to be initialized
-            connection = await (async () => {
-              let freshConnection: IConnection = connection;
+            for (let i = 0; i <= waitRetryCount; i++) {
+              freshConnection = await this.connectionManager.hydrateConnection(connectionId);
 
               if (freshConnection.data.isInitialized) {
                 return freshConnection;
               }
 
-              for (let i = 0; i <= waitRetryCount; i++) {
-                freshConnection = await this.connectionManager.hydrateConnection(connectionId);
-
-                if (freshConnection.data.isInitialized) {
-                  return freshConnection;
-                }
-
-                // wait for another round
-                await new Promise(r => setTimeout(r, waitTimeout));
-              }
-
-              return freshConnection;
-            })();
-
-            if (!connection.data.isInitialized) {
-              // refuse connection which did not send GQL_CONNECTION_INIT operation
-              const errorResponse = formatMessage({
-                type: SERVER_EVENT_TYPES.GQL_ERROR,
-                payload: { message: "Prohibited connection!" }
-              });
-
-              await this.connectionManager.sendToConnection(connection, errorResponse);
-              await this.connectionManager.closeConnection(connection);
-
-              return {
-                body: errorResponse,
-                statusCode: 401
-              };
+              // wait for another round
+              await new Promise(r => setTimeout(r, waitTimeout));
             }
 
-            if (isGQLStopOperation(operation)) {
-              // unsubscribe client
-              if (onOperationComplete) {
-                onOperationComplete(connection, operation.id);
-              }
-              const response = formatMessage({
-                id: operation.id,
-                type: SERVER_EVENT_TYPES.GQL_COMPLETE
-              });
+            return freshConnection;
+          })();
 
-              await this.connectionManager.sendToConnection(connection, response);
-
-              await this.subscriptionManager.unsubscribeOperation(connection.id, operation.id);
-
-              return {
-                body: response,
-                statusCode: 200
-              };
-            }
-
-            if (isGQLDisconnect(operation)) {
-              // unregisterConnection will be handled by $disconnect, return straightaway
-              return {
-                body: "",
-                statusCode: 200
-              };
-            }
-
-            const pubSub = new PubSub();
-            // following line is really redundant but we need to
-            // this makes sure that if you invoke the event
-            // and you use Context creator function
-            // then it'll be called with $$internal context according to spec
-            const options = await this.createGraphQLServerOptions(event, lambdaContext, {
-              // this allows createGraphQLServerOptions() to append more extra data
-              // to context from connection.data.context
-              connection,
-              operation,
-              pubSub,
-              registerSubscriptions: true
-            });
-            const result = await execute({
-              ...options,
-              schema: options.schema!,
-              connection,
-              connectionManager: this.connectionManager,
-              event,
-              lambdaContext,
-              onOperation,
-              operation,
-              pubSub,
-              // tell execute to register subscriptions
-              registerSubscriptions: true,
-              subscriptionManager: this.subscriptionManager
+          if (!connection.data.isInitialized) {
+            // refuse connection which did not send GQL_CONNECTION_INIT operation
+            const errorResponse = formatMessage({
+              type: SERVER_EVENT_TYPES.GQL_ERROR,
+              payload: { message: "Prohibited connection!" }
             });
 
-            if (!isAsyncIterable(result)) {
-              // send response to client so it can finish operation in case of query or mutation
-              if (onOperationComplete) {
-                onOperationComplete(
-                  connection,
-                  (operation as IdentifiedOperationRequest).operationId
-                );
-              }
-              const response = formatMessage({
-                id: (operation as IdentifiedOperationRequest).operationId,
-                payload: result as ExecutionResult,
-                type: SERVER_EVENT_TYPES.GQL_NEXT
-              });
-              await this.connectionManager.sendToConnection(connection, response);
-              return {
-                body: response,
-                statusCode: 200
-              };
+            await this.connectionManager.sendToConnection(connection, errorResponse);
+            await this.connectionManager.closeConnection(connection);
+
+            return {
+              body: errorResponse,
+              statusCode: 401
+            };
+          }
+
+          if (isGQLStopOperation(operation)) {
+            // unsubscribe client
+            if (onOperationComplete) {
+              onOperationComplete(connection, operation.id);
             }
-            // this is just to make sure
-            // when you deploy this using serverless cli
-            // then integration response is not assigned to $default route
-            // so this won't make any difference
-            // but the sendToConnection above will send the response to client
-            // so client'll receive the response for his operation
+            const response = formatMessage({
+              id: operation.id,
+              type: SERVER_EVENT_TYPES.GQL_COMPLETE
+            });
+
+            await this.connectionManager.sendToConnection(connection, response);
+
+            await this.subscriptionManager.unsubscribeOperation(connection.id, operation.id);
+
+            return {
+              body: response,
+              statusCode: 200
+            };
+          }
+
+          if (isGQLDisconnect(operation)) {
+            // unregisterConnection will be handled by $disconnect, return straightaway
             return {
               body: "",
               statusCode: 200
             };
           }
-          default: {
-            throw new Error(`Invalid event ${(event.requestContext as any).routeKey} received`);
-          }
-        }
-      } catch (e) {
-        this.onError(e);
 
-        return {
-          body: e.message || "Internal server error",
-          statusCode: 500
-        };
+          const pubSub = new PubSub();
+          // following line is really redundant but we need to
+          // this makes sure that if you invoke the event
+          // and you use Context creator function
+          // then it'll be called with $$internal context according to spec
+          const options = await this.createGraphQLServerOptions(event, context, {
+            // this allows createGraphQLServerOptions() to append more extra data
+            // to context from connection.data.context
+            connection,
+            operation,
+            pubSub,
+            registerSubscriptions: true
+          });
+          const result = await execute({
+            ...options,
+            schema: options.schema!,
+            connection,
+            connectionManager: this.connectionManager,
+            event,
+            lambdaContext: context,
+            onOperation,
+            operation,
+            pubSub,
+            // tell execute to register subscriptions
+            registerSubscriptions: true,
+            subscriptionManager: this.subscriptionManager
+          });
+
+          if (!isAsyncIterable(result)) {
+            // send response to client so it can finish operation in case of query or mutation
+            if (onOperationComplete) {
+              onOperationComplete(
+                connection,
+                (operation as IdentifiedOperationRequest).operationId
+              );
+            }
+            const response = formatMessage({
+              id: (operation as IdentifiedOperationRequest).operationId,
+              payload: result as ExecutionResult,
+              type: SERVER_EVENT_TYPES.GQL_NEXT
+            });
+            await this.connectionManager.sendToConnection(connection, response);
+            return {
+              body: response,
+              statusCode: 200
+            };
+          }
+          // this is just to make sure
+          // when you deploy this using serverless cli
+          // then integration response is not assigned to $default route
+          // so this won't make any difference
+          // but the sendToConnection above will send the response to client
+          // so client'll receive the response for his operation
+          return {
+            body: "",
+            statusCode: 200
+          };
+        }
+        default: {
+          throw new Error(`Invalid event ${(event.requestContext as any).routeKey} received`);
+        }
       }
-    };
-  }
+    } catch (e) {
+      this.onError(e);
+
+      return {
+        body: e.message || "Internal server error",
+        statusCode: 500
+      };
+    }
+  };
 }
