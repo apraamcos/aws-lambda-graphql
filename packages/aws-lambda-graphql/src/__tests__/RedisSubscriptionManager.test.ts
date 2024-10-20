@@ -76,7 +76,7 @@ describe("RedisSubscriptionManager", () => {
       expect(redisClient.lpush).toHaveBeenCalledTimes(2);
 
       expect((redisClient.set as jest.Mock).mock.calls[0]).toEqual([
-        "aws-lambda-graphql:subscription:1:1:{name1}",
+        "WebSocket:subscription:1:1:{name1}",
         JSON.stringify({
           connection: {
             id: "1"
@@ -90,16 +90,16 @@ describe("RedisSubscriptionManager", () => {
         })
       ]);
       expect((redisClient.set as jest.Mock).mock.calls[1]).toEqual([
-        "aws-lambda-graphql:subscriptionOperation:1:1",
+        "WebSocket:subscriptionOperation:1:1",
         "name1"
       ]);
       expect((redisClient.lpush as jest.Mock).mock.calls[0]).toEqual([
-        "aws-lambda-graphql:eventSubscriptionsList:name1",
-        "aws-lambda-graphql:subscription:1:1:{name1}"
+        "WebSocket:eventSubscriptionsList:name1",
+        "WebSocket:subscription:1:1:{name1}"
       ]);
       expect((redisClient.lpush as jest.Mock).mock.calls[1]).toEqual([
-        "aws-lambda-graphql:connectionSubscriptionsList:1",
-        "aws-lambda-graphql:subscription:1:1:{name1}"
+        "WebSocket:connectionSubscriptionsList:1",
+        "WebSocket:subscription:1:1:{name1}"
       ]);
     });
   });
@@ -124,20 +124,20 @@ describe("RedisSubscriptionManager", () => {
       expect(redisClient.lrem).toHaveBeenCalledTimes(2);
 
       expect((redisClient.del as jest.Mock).mock.calls[0]).toEqual([
-        "aws-lambda-graphql:subscriptionOperation:1:1"
+        "WebSocket:subscriptionOperation:1:1"
       ]);
       expect((redisClient.del as jest.Mock).mock.calls[1]).toEqual([
-        "aws-lambda-graphql:subscription:1:1:{test}"
+        "WebSocket:subscription:1:1:{test}"
       ]);
       expect((redisClient.lrem as jest.Mock).mock.calls[0]).toEqual([
-        "aws-lambda-graphql:eventSubscriptionsList:test",
+        "WebSocket:eventSubscriptionsList:test",
         0,
-        "aws-lambda-graphql:subscription:1:1:{test}"
+        "WebSocket:subscription:1:1:{test}"
       ]);
       expect((redisClient.lrem as jest.Mock).mock.calls[1]).toEqual([
-        "aws-lambda-graphql:connectionSubscriptionsList:1",
+        "WebSocket:connectionSubscriptionsList:1",
         0,
-        "aws-lambda-graphql:subscription:1:1:{test}"
+        "WebSocket:subscription:1:1:{test}"
       ]);
     });
   });
