@@ -1,8 +1,4 @@
-import {
-  ApolloServer,
-  type ApolloServerOptions,
-  type ApolloServerOptionsWithSchema
-} from "@apollo/server";
+import { type ApolloServerOptions } from "@apollo/server";
 import assert from "assert";
 import type {
   APIGatewayProxyResult,
@@ -44,8 +40,8 @@ interface ExtraGraphQLOptions extends Options {
   context?: object | ((contextParams: IContext) => object | Promise<object>);
 }
 
-export interface ServerConfig<TServer extends object, TEventHandler extends LambdaHandler>
-  extends ApolloServerOptionsWithSchema<any> {
+export interface WebSocketServerConfig<TServer extends object, TEventHandler extends LambdaHandler>
+  extends Options {
   /**
    * Connection manager takes care of
    *  - registering/unregistering WebSocket connections
@@ -123,7 +119,7 @@ export interface ServerConfig<TServer extends object, TEventHandler extends Lamb
   };
 }
 
-export class Server<TEventHandler extends LambdaHandler = any> extends ApolloServer {
+export class WebSocketServer<TEventHandler extends LambdaHandler = any> {
   private connectionManager: IConnectionManager;
 
   private eventProcessor: any;
@@ -132,9 +128,12 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
 
   private subscriptionManager: ISubscriptionManager;
 
-  private subscriptionOptions: ServerConfig<Server, TEventHandler>["subscriptions"];
+  private subscriptionOptions: WebSocketServerConfig<
+    WebSocketServer,
+    TEventHandler
+  >["subscriptions"];
 
-  private apolloConfig: ApolloServerOptionsWithSchema<any>;
+  private apolloConfig: Options;
 
   constructor({
     connectionManager,
@@ -144,11 +143,7 @@ export class Server<TEventHandler extends LambdaHandler = any> extends ApolloSer
     subscriptionManager,
     subscriptions,
     ...restConfig
-  }: ServerConfig<Server, TEventHandler>) {
-    super({
-      ...restConfig
-    });
-
+  }: WebSocketServerConfig<WebSocketServer, TEventHandler>) {
     assert.ok(
       connectionManager,
       "Please provide connectionManager and ensure it implements IConnectionManager"

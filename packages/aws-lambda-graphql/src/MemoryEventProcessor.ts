@@ -5,7 +5,7 @@ import { formatMessage } from "./formatMessage";
 import { execute } from "./execute";
 import type { ISubscriptionEvent, IEventProcessor } from "./types";
 import { SERVER_EVENT_TYPES } from "./protocol";
-import type { Server } from "./Server";
+import type { WebSocketServer } from "./WebSocketServer";
 
 // polyfill Symbol.asyncIterator
 if (Symbol.asyncIterator === undefined) {
@@ -14,7 +14,7 @@ if (Symbol.asyncIterator === undefined) {
 
 export type EventProcessorFn = (events: ISubscriptionEvent[], lambdaContext?: any) => Promise<void>;
 
-export class MemoryEventProcessor<TServer extends Server = Server>
+export class MemoryEventProcessor<TServer extends WebSocketServer = WebSocketServer>
   implements IEventProcessor<TServer, EventProcessorFn>
 {
   public createHandler(server: TServer): EventProcessorFn {

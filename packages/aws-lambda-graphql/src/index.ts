@@ -12,5 +12,5 @@ export * from "./helpers";
 export * from "./protocol";
 export type * from "./types";
 export * from "./PubSub";
-export * from "./Server";
+export * from "./WebSocketServer";
 export * from "./withFilter";

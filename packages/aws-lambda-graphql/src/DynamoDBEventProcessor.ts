@@ -6,7 +6,7 @@ import type { IEventProcessor } from "./types";
 import { formatMessage } from "./formatMessage";
 import { execute } from "./execute";
 import { SERVER_EVENT_TYPES } from "./protocol";
-import type { Server } from "./Server";
+import type { WebSocketServer } from "./WebSocketServer";
 import type { IDynamoDBSubscriptionEvent } from "./DynamoDBEventStore";
 import { isTTLExpired } from "./helpers/isTTLExpired";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
@@ -29,7 +29,7 @@ interface DynamoDBEventProcessorOptions {
  *
  * Processes DynamoDB stream event in order to send events to subscribed clients
  */
-export class DynamoDBEventProcessor<TServer extends Server = Server>
+export class DynamoDBEventProcessor<TServer extends WebSocketServer = WebSocketServer>
   implements IEventProcessor<TServer, DynamoDBStreamHandler>
 {
   private onError: (err: any) => void;
