@@ -149,9 +149,11 @@ export class RedisSubscriptionManager implements ISubscriptionManager {
           event: eventName,
           subscriptionId,
           operationId: operation.operationId
-        } as RedisSubscriber)
+        } as RedisSubscriber),
+        "EX",
+        7200
       ),
-      redisClient.set(subscriptionOperationKey, eventName),
+      redisClient.set(subscriptionOperationKey, eventName, "EX", 7200),
       redisClient.lpush(prefixRedisKey(`eventSubscriptionsList:${eventName}`), subscriptionKey),
       redisClient.lpush(
         prefixRedisKey(`connectionSubscriptionsList:${connection.id}`),
