@@ -206,7 +206,7 @@ export class WebSocketServer<TEventHandler extends LambdaHandler = any> {
     };
   }
 
-  public createWebsocketHandler(): (
+  public createWebSocketHandler(): (
     event: APIGatewayWebSocketEvent,
     context: LambdaContext
   ) => Promise<APIGatewayProxyResult> | TEventHandler {
