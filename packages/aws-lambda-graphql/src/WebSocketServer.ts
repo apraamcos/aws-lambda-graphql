@@ -299,7 +299,7 @@ export class WebSocketServer<TEventHandler extends LambdaHandler = any> {
         case "$disconnect": {
           const { onDisconnect } = this.subscriptionOptions || {};
           // this event is called eventually by AWS APIGateway v2
-          // we actualy don't care about a result of this operation because client is already
+          // we actually don't care about a result of this operation because client is already
           // disconnected, it is meant only for clean up purposes
           // hydrate connection
           const connection = await this.connectionManager.hydrateConnection(

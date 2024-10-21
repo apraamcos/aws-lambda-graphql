@@ -121,7 +121,7 @@ export class RedisConnectionManager implements IConnectionManager {
         data: connection.data
       }),
       "EX",
-      7200 // two hours maximal ttl for apigatrway websocket connections
+      7200 // two hours maximal ttl for apigateway websocket connections
     );
     return connection;
   };
